@@ -18,8 +18,11 @@ var peer = new Peer(undefined, {
 let myVideoStream;
 navigator.mediaDevices
   .getUserMedia({
-    audio: true,
-    video: false,
+    audio: {
+      sampleRate: 8000, // reduce sample rate to 16000 Hz
+      channelCount: 1 // use only 1 audio channel
+    },
+    video: false, // disable video
   })
   .then((stream) => {
     myVideoStream = stream;
@@ -67,6 +70,8 @@ const addVideoStream = (video, stream) => {
   video.srcObject = stream;
   video.addEventListener("loadedmetadata", () => {
     video.play();
+    video.width = 240; // set video width to 240 pixels
+    video.height = 180; // set video height to 180 pixels
     videoGrid.append(video);
   });
 };
@@ -92,7 +97,6 @@ text.addEventListener("keydown", (e) => {
     text.value = "";
   }
 });
-
 function toggleAudio(b) {
   if (b == "true") {
     myVideoStream.getAudioTracks()[0].enabled = true;
