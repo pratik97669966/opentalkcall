@@ -31,8 +31,6 @@ io.on("connection", (socket) => {
     socket.to(roomId).broadcast.emit("user-connected", userId);
     socket.on("message", (message) => {
       var isDirty = profanity.isMessageDirty(message);
-      console.log(isDirty);
-      let systemMessage = "";
       if (isDirty) {
         message = "<span style='color: red;'>🚨 Using bad word may ban your account permanantly</span>";
       }
