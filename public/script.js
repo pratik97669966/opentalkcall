@@ -31,11 +31,6 @@ navigator.mediaDevices
       call.on("stream", (userVideoStream) => {
         addVideoStream(video, userVideoStream);
       });
-      stream.getAudioTracks()[0].enabled = false;
-      myVideoStream.getAudioTracks()[0].enabled = false;
-      html = `<i class="fas fa-microphone-slash"></i>`;
-      muteButton.classList.toggle("background__red");
-      muteButton.innerHTML = html;
     });
 
     socket.on("user-connected", (userId) => {
