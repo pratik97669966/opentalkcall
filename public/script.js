@@ -40,8 +40,7 @@ navigator.mediaDevices
 
     socket.on("user-connected", (userId) => {
       connectToNewUser(userId, stream);
-
-      socket.emit("message", `<p><strong>${user}</strong> has connected!</p>`);
+      //socket.emit("message", `<p><strong>${user}</strong> has connected!</p>`);
     });
   });
 
