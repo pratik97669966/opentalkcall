@@ -1,5 +1,6 @@
 const express = require("express");
 const app = express();
+var profanity = require("profanity-hindi");
 const server = require("http").Server(app);
 const { v4: uuidv4 } = require("uuid");
 app.set("view engine", "ejs");
@@ -29,6 +30,12 @@ io.on("connection", (socket) => {
     socket.join(roomId);
     socket.to(roomId).broadcast.emit("user-connected", userId);
     socket.on("message", (message) => {
+      var isDirty = profanity.isMessageDirty(message);
+      console.log(isDirty);
+      let systemMessage = "";
+      if (isDirty) {
+        message = "<span style='color: red;'>🚨 Using bad word may ban your account permanantly</span>";
+      }
       io.to(roomId).emit("createMessage", message, userName);
     });
   });

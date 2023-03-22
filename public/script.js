@@ -8,7 +8,7 @@ document.querySelector(".main__right").style.flex = "1";
 document.querySelector(".main__left").style.display = "none";
 const params = new URLSearchParams(window.location.search);
 const user = params.get('userName');
-
+console.log("userconnected");
 var peer = new Peer(undefined, {
   path: "/peerjs",
   host: "/",
@@ -18,10 +18,7 @@ var peer = new Peer(undefined, {
 let myVideoStream;
 navigator.mediaDevices
   .getUserMedia({
-    audio: {
-      sampleRate: 8000, // reduce sample rate to 16000 Hz
-      channelCount: 1 // use only 1 audio channel
-    },
+    audio: true,
     video: false, // disable video
   })
   .then((stream) => {
@@ -43,6 +40,7 @@ navigator.mediaDevices
 
     socket.on("user-connected", (userId) => {
       connectToNewUser(userId, stream);
+
       socket.emit("message", `<p><strong>${user}</strong> has connected!</p>`);
     });
   });
@@ -56,10 +54,10 @@ const connectToNewUser = (userId, stream) => {
 };
 socket.on('user-disconnected', (userId) => {
   if (user == null) {
-    socket.emit("message", `user has Disconnected !`);
+    //   socket.emit("message", `user has Disconnected !`);
     text.value = "";
   } else {
-    socket.emit("message", `<p><strong>${user}</strong> has Disconnected !</p>`);
+    //    socket.emit("message", `<p><strong>${user}</strong> has Disconnected !</p>`);
   }
 });
 peer.on("open", (id) => {
@@ -82,8 +80,9 @@ let messages = document.querySelector(".messages");
 
 send.addEventListener("click", (e) => {
   if (text.value.length !== 0) {
-    socket.emit("message", text.value);
-    text.value = "";
+    let message = text.value;
+    socket.emit("message", message);
+    text.value = '';
   }
 });
 
@@ -93,8 +92,9 @@ socket.on('broadcast', (number) => {
 
 text.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && text.value.length !== 0) {
-    socket.emit("message", text.value);
-    text.value = "";
+    let message = text.value;
+    socket.emit("message", message);
+    text.value = '';
   }
 });
 function toggleAudio(b) {
@@ -104,7 +104,21 @@ function toggleAudio(b) {
     myVideoStream.getAudioTracks()[0].enabled = false;
   }
 }
+function checkMatch(userMessage) {
 
+  let originalMessage = userMessage;
+  let inputMessage = userMessage.toLowerCase();
+  let result = inputMessage.match(/(asshole|ass hole|fuck off|fuck you|sucking|gspot|fuck|fuckoff|fuckface|fuckface|ass|cumbubble|bugger|cumdumpsterfuck|cocknose|wanker|fuck you|bollocks|shitbag|knobhead|twatwaffle|shit|choad|thundercunt|pissoff|bitch|tits|dickhead|knobjockey|asshole|crikey|shitpouch|cuntpuddle|dickweed|rubbish|jizzstain|dickweasel|cunt|pissflaps|nonce|quim|bitch|shag|pisskidney|bawbag|fuck|trumpet|bastard)/g);
+  //  var slangLengh = result.length;
+  //document.getElementById("matchResult").innerHTML = result;
+  console.log(result);
+  if (result != null) {
+    //Copy message to support team.
+    return 1;
+  } else {
+    return 0;
+  }
+}
 socket.on("createMessage", (message, userName) => {
   messages.innerHTML =
     messages.innerHTML +
