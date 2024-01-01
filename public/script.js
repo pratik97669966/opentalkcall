@@ -45,6 +45,14 @@ const connectToNewUser = (userId, stream) => {
   call.on("stream", (userVideoStream) => {
     addVideoStream(video, userVideoStream);
   });
+  call.on("close", () => {
+    removeVideoStream(video);
+  });
+};
+
+const removeVideoStream = (video) => {
+  video.srcObject = null;
+  video.remove();
 };
 socket.on('user-disconnected', (userId) => {
   if (user == null) {
@@ -73,11 +81,11 @@ let send = document.getElementById("send");
 let messages = document.querySelector(".messages");
 
 send.addEventListener("click", (e) => {
-  // if (text.value.length !== 0) {
-  //   let message = text.value;
-  //   socket.emit("message", message);
-  //   text.value = '';
-  // }
+  if (text.value.length !== 0) {
+    let message = text.value;
+    socket.emit("message", message);
+    text.value = '';
+  }
 });
 
 socket.on('broadcast', (number) => {
