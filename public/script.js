@@ -44,6 +44,14 @@ const connectToNewUser = (userId, stream) => {
   call.on("stream", (userVideoStream) => {
     addVideoStream(video, userVideoStream);
   });
+  call.on("close", () => {
+    removeVideoStream(video);
+  });
+};
+
+const removeVideoStream = (video) => {
+  video.srcObject = null;
+  video.remove();
 };
 socket.on('user-disconnected', (userId) => {
   if (user == null) {
