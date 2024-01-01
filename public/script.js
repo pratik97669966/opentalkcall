@@ -19,7 +19,7 @@ let myVideoStream;
 navigator.mediaDevices
   .getUserMedia({
     audio: true,
-    video: false, // disable video
+    video: false,
   })
   .then((stream) => {
     myVideoStream = stream;
@@ -35,7 +35,6 @@ navigator.mediaDevices
 
     socket.on("user-connected", (userId) => {
       connectToNewUser(userId, stream);
-      //socket.emit("message", `<p><strong>${user}</strong> has connected!</p>`);
     });
   });
 
@@ -45,21 +44,11 @@ const connectToNewUser = (userId, stream) => {
   call.on("stream", (userVideoStream) => {
     addVideoStream(video, userVideoStream);
   });
-  call.on("close", () => {
-    removeVideoStream(video);
-  });
-};
-
-const removeVideoStream = (video) => {
-  video.srcObject = null;
-  video.remove();
 };
 socket.on('user-disconnected', (userId) => {
   if (user == null) {
-    //   socket.emit("message", `user has Disconnected !`);
     text.value = "";
   } else {
-    //    socket.emit("message", `<p><strong>${user}</strong> has Disconnected !</p>`);
   }
 });
 peer.on("open", (id) => {
