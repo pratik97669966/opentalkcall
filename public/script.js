@@ -13,7 +13,18 @@ var peer = new Peer(undefined, {
   path: "/peerjs",
   host: "/",
   port: "443",
+  config: {
+    iceServers: [
+      { url: "stun:stun.l.google.com:19302" }, // Public Google STUN server
+      {
+        url: "turn:relay1.expressturn.com:3478",
+        username: "efVUZD5UTACRXVRWPZ",
+        credential: "8sySd3wS5s4NU2mR",
+      },
+    ],
+  },
 });
+
 
 let myVideoStream;
 navigator.mediaDevices
