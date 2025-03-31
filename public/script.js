@@ -8,14 +8,13 @@ document.querySelector(".main__right").style.flex = "1";
 document.querySelector(".main__left").style.display = "none";
 const params = new URLSearchParams(window.location.search);
 const user = params.get('userName');
-console.log("userconnected");
 var peer = new Peer(undefined, {
   path: "/peerjs",
   host: "/",
   port: "443",
   config: {
     iceServers: [
-      { url: "stun:stun.l.google.com:19302" }, // Public Google STUN server
+      { url: "stun:stun.l.google.com:19302" },
       {
         url: "turn:relay1.expressturn.com:3478",
         username: "efVUZD5UTACRXVRWPZ",
