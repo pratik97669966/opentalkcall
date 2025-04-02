@@ -20,12 +20,12 @@ showChat.addEventListener("click", () => {
 });
 
 var peer = new Peer({
-  // host: '127.0.0.1',
-  // port: 3030,
-  // path: '/peerjs',
-  path: "/peerjs",
-  host: "/",
-  port: "443",
+  host: '127.0.0.1',
+  port: 3030,
+  path: '/peerjs',
+  // path: "/peerjs",
+  // host: "/",
+  // port: "443",
   config: {
     iceServers: [
       { url: "stun:stun.l.google.com:19302" },
