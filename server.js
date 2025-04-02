@@ -51,7 +51,7 @@ io.on("connection", (socket) => {
     console.log(`✅ ${userName} joined room: ${roomId} (UserID: ${userId})`);
 
     // Notify others in the room that a user has joined
-    socket.to(roomId).emit("user-connected", userId);
+    socket.to(roomId).emit("user-connected", userId, userName);
 
     // Handle incoming chat messages
     socket.on("message", (message) => {

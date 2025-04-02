@@ -60,8 +60,8 @@ navigator.mediaDevices
       });
     });
 
-    socket.on("user-connected", (userId) => {
-      connectToNewUser(userId, stream);
+    socket.on("user-connected", (userId, userName) => {
+      connectToNewUser(userId, userName, myVideoStream);
     });
   });
 socket.on("user-disconnected", (userId) => {
@@ -70,14 +70,15 @@ socket.on("user-disconnected", (userId) => {
     videoElement.remove(); // Remove the video element from the UI
   }
 });
-const connectToNewUser = (userId, stream) => {
-  console.log('I call someone ' + userId);
+const connectToNewUser = (userId, userName, stream) => {
+  console.log(`Calling ${userName} (${userId})`);
   const call = peer.call(userId, stream);
   const video = document.createElement("video");
   call.on("stream", (userVideoStream) => {
-    addVideoStream(video, userVideoStream, userId); // Pass userId here
+    addVideoStream(video, userVideoStream, userName); // Use userName instead of userId
   });
 };
+
 
 // Use USER_NAME in your client-side code
 peer.on("open", (id) => {
@@ -85,21 +86,22 @@ peer.on("open", (id) => {
   socket.emit("join-room", ROOM_ID, id, USER_NAME); // Send userName to the server
 });
 
-const addVideoStream = (video, stream, userId = null) => {
+const addVideoStream = (video, stream, userName = null) => {
   video.srcObject = stream;
-  if (userId) {
-    video.id = userId; // Assign userId as the id of the video element
+  if (userName) {
+    video.id = userName; // Assign userName as the id of the video element
   }
   video.addEventListener("loadedmetadata", () => {
     video.play();
     videoGrid.append(video);
   });
 
-  // Call detectSpeaking to monitor the audio stream
-  detectSpeaking(stream, video);
+  // Detect speaking and send userName to Android
+  detectSpeaking(stream, userName);
 };
 
-const detectSpeaking = (stream, videoElement) => {
+
+const detectSpeaking = (stream, userName) => {
   const audioContext = new AudioContext();
   const analyser = audioContext.createAnalyser();
   const source = audioContext.createMediaStreamSource(stream);
@@ -113,11 +115,25 @@ const detectSpeaking = (stream, videoElement) => {
     const volume = dataArray.reduce((a, b) => a + b, 0);
 
     if (volume > 500) { // Adjust this threshold based on your environment
-      const intensity = Math.min(volume / 5000, 1); // Normalize intensity (0 to 1)
-      const borderColor = `rgba(0, 255, 0, ${intensity})`; // Green border with intensity
-      videoElement.style.border = `3px solid ${borderColor}`;
+      const intensity = Math.min(volume / 5000, 1);
+      const borderColor = `rgba(0, 255, 0, ${intensity})`;
+      const videoElement = document.getElementById(userName); // Use userName instead of userId
+      if (videoElement) {
+        videoElement.style.border = `3px solid ${borderColor}`;
+      }
+
+      // Send userName instead of userId to Android
+      if (window.Android) {
+        Android.speakerDetected(userName, volume);
+      } else {
+        console.log("Android object is not available. Running in a browser?");
+      }
+
     } else {
-      videoElement.style.border = `3px solid #FFFFFF`; // Remove the border when silent
+      const videoElement = document.getElementById(userName);
+      if (videoElement) {
+        videoElement.style.border = `3px solid #FFFFFF`;
+      }
     }
 
     requestAnimationFrame(checkSpeaking);
