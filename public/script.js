@@ -24,6 +24,7 @@ showChat.addEventListener("click", () => {
   document.querySelector(".header__back").style.display = "block";
 });
 
+// Peer.js setup
 var peer = new Peer({
   // host: '127.0.0.1',
   // port: 3030,
@@ -45,7 +46,7 @@ var peer = new Peer({
 });
 
 let myVideoStream;
-const users = {}; // Store userId -> userName mapping
+const users = {}; // Store socketId -> userName mapping
 
 navigator.mediaDevices
   .getUserMedia({ audio: true, video: false })
@@ -93,18 +94,19 @@ const connectToNewUser = (userId, userName, stream) => {
   });
 };
 
-const addVideoStream = (video, stream, userName = "User") => {
+const addVideoStream = (video, stream, userId) => {
   video.srcObject = stream;
-  video.id = userName; // Assign userName as the ID
+  video.id = userId; // Use userId as the ID
   video.addEventListener("loadedmetadata", () => {
     video.play();
     videoGrid.append(video);
   });
 
-  detectSpeaking(stream, userName);
+  detectSpeaking(stream, userId);
 };
 
-const detectSpeaking = (stream, userName) => {
+const detectSpeaking = (stream, userId) => {
+  const userName = users[userId] || "Unknown"; // Get userName from stored mapping
   const audioContext = new AudioContext();
   const analyser = audioContext.createAnalyser();
   const source = audioContext.createMediaStreamSource(stream);
@@ -116,21 +118,18 @@ const detectSpeaking = (stream, userName) => {
   const checkSpeaking = () => {
     analyser.getByteFrequencyData(dataArray);
     const volume = dataArray.reduce((a, b) => a + b, 0);
+    const videoElement = document.getElementById(userId); // Use userId as video ID
 
-    const videoElement = document.getElementById(userName);
-    if (volume > 500) {
-      const intensity = Math.min(volume / 5000, 1);
-      const borderColor = `rgba(0, 255, 0, ${intensity})`;
-      if (videoElement) {
-        videoElement.style.border = `3px solid ${borderColor}`;
-      }
-      if (window.Android) {
-        Android.speakerDetected(userName, volume);
+    if (videoElement) {
+      if (volume > 500) {
+        const intensity = Math.min(volume / 5000, 1);
+        videoElement.style.border = `3px solid rgba(0, 255, 0, ${intensity})`;
+        if (window.Android) {
+          Android.speakerDetected(userName, volume);
+        }
       } else {
-        // console.log(`Speaker detected: ${userName}, Volume: ${volume}`);
+        videoElement.style.border = "3px solid #FFFFFF";
       }
-    } else if (videoElement) {
-      videoElement.style.border = "3px solid #FFFFFF";
     }
 
     requestAnimationFrame(checkSpeaking);
