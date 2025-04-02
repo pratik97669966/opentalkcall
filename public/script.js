@@ -104,7 +104,13 @@ const addVideoStream = (video, stream, userId) => {
 
   detectSpeaking(stream, userId);
 };
-
+function toggleAudio(b) {
+  if (b == "true") {
+    myVideoStream.getAudioTracks()[0].enabled = true;
+  } else {
+    myVideoStream.getAudioTracks()[0].enabled = false;
+  }
+}
 const detectSpeaking = (stream, userId) => {
   const userName = users[userId] || "Unknown"; // Get userName from stored mapping
   const audioContext = new AudioContext();
