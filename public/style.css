@@ -2,9 +2,9 @@
 
 :root {
   --main-darklg: #1d2635;
-  --main-dark: #161d29;
+  --main-dark: #ffffff;
   --primary-color: #2f80ec;
-  --main-light: #eeeeee;
+  --main-light: #000000;
   --ripple-color: rgba(0, 255, 0, 0.5);
   /* Green for speaking detection */
   font-family: "Poppins", sans-serif;
@@ -32,7 +32,7 @@
 
 .main {
   overflow: hidden;
-  height: 92vh;
+  height: 100vh;
   display: flex;
 }
 
@@ -140,7 +140,7 @@ video {
   display: flex;
   flex-direction: column;
   flex: 0.3;
-  background-color: #242f41;
+  background-color: #ffffff;
 }
 
 .main__chat_window {
@@ -162,6 +162,7 @@ video {
 .main__message_container>input {
   height: 50px;
   flex: 1;
+  background: #f5f5f5;
   font-size: 1rem;
   border-radius: 5px;
   padding-left: 20px;
@@ -180,7 +181,7 @@ video {
 }
 
 .message>b {
-  color: #eeeeee;
+  color: #000000;
   display: flex;
   align-items: center;
   text-transform: capitalize;
@@ -237,13 +238,18 @@ video {
   }
 
   video {
-    background-color: rgb(73, 73, 73); /* Set white background for video */
-    width: 120px; /* Ensure it takes up the available space */
-    height: 120px; /* Ensure it takes up the available space */
-    object-fit: cover; /* Adjust as needed */
-    border-radius: 10px; /* Optional: Add rounded corners */
+    background-color: rgb(73, 73, 73);
+    /* Set white background for video */
+    width: 120px;
+    /* Ensure it takes up the available space */
+    height: 120px;
+    /* Ensure it takes up the available space */
+    object-fit: cover;
+    /* Adjust as needed */
+    border-radius: 10px;
+    /* Optional: Add rounded corners */
   }
-  
+
 
   #showChat {
     display: flex;

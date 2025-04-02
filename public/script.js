@@ -4,7 +4,9 @@ const myVideo = document.createElement("video");
 const showChat = document.querySelector("#showChat");
 const backBtn = document.querySelector(".header__back");
 myVideo.muted = true;
-
+document.querySelector(".main__right").style.display = "flex";
+document.querySelector(".main__right").style.flex = "1";
+document.querySelector(".main__left").style.display = "none";
 backBtn.addEventListener("click", () => {
   document.querySelector(".main__left").style.display = "flex";
   document.querySelector(".main__left").style.flex = "1";
@@ -145,17 +147,11 @@ text.addEventListener("keydown", (e) => {
 const inviteButton = document.querySelector("#inviteButton");
 const muteButton = document.querySelector("#muteButton");
 const stopVideo = document.querySelector("#stopVideo");
-function toggleAudio(enabled) {
-  if (enabled) {
-    myVideoStream.getAudioTracks()[0].enabled = false;
-    html = `<img src="micoff.svg" alt="audio"  style="width: 24px; height: 24px; cursor: pointer;"/>`;
-    muteButton.classList.toggle("background__red");
-    muteButton.innerHTML = html;
-  } else {
+function toggleAudio(b) {
+  if (b == "true") {
     myVideoStream.getAudioTracks()[0].enabled = true;
-    html = `<img src="micon.svg" alt="audio"  style="width: 24px; height: 24px; cursor: pointer;"/>`;
-    muteButton.classList.toggle("background__red");
-    muteButton.innerHTML = html;
+  } else {
+    myVideoStream.getAudioTracks()[0].enabled = false;
   }
 }
 muteButton.addEventListener("click", () => {
