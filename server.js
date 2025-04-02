@@ -39,7 +39,7 @@ app.get("/:room", (req, res) => {
 
 // Handle WebSocket connections
 io.on("connection", (socket) => {
-  console.log(`🔗 A user connected: ${socket.id}`);
+  // console.log(`🔗 A user connected: ${socket.id}`);
 
   socket.on("join-room", (roomId, userId, userName) => {
     if (!roomId || !userId) {
@@ -48,20 +48,20 @@ io.on("connection", (socket) => {
     }
 
     socket.join(roomId);
-    console.log(`✅ ${userName} joined room: ${roomId} (UserID: ${userId})`);
+    // console.log(`✅ ${userName} joined room: ${roomId} (UserID: ${userId})`);
 
     // Notify others in the room that a user has joined
     socket.to(roomId).emit("user-connected", userId, userName);
 
     // Handle incoming chat messages
     socket.on("message", (message) => {
-      console.log(`💬 ${userName}: ${message}`);
+      // console.log(`💬 ${userName}: ${message}`);
       io.to(roomId).emit("createMessage", message, userName);
     });
 
     // Handle user disconnection
     socket.on("disconnect", () => {
-      console.log(`❌ ${userName} disconnected from room: ${roomId}`);
+      // console.log(`❌ ${userName} disconnected from room: ${roomId}`);
       socket.to(roomId).emit("user-disconnected", userId);
     });
   });

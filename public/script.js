@@ -5,6 +5,7 @@ const showChat = document.querySelector("#showChat");
 const backBtn = document.querySelector(".header__back");
 myVideo.muted = true;
 
+// UI Handling
 document.querySelector(".main__right").style.display = "flex";
 document.querySelector(".main__right").style.flex = "1";
 document.querySelector(".main__left").style.display = "none";
@@ -23,21 +24,18 @@ showChat.addEventListener("click", () => {
   document.querySelector(".header__back").style.display = "block";
 });
 
-// Maintain list of users
-const users = {};
-
 var peer = new Peer({
-  // host: '127.0.0.1',
-  // port: 3030,
-  // path: '/peerjs',
-  path: "/peerjs",
-  host: "/",
-  port: "443",
+  host: '127.0.0.1',
+  port: 3030,
+  path: '/peerjs',
+  // path: "/peerjs",
+  // host: "/",
+  // port: "443",
   config: {
     iceServers: [
-      { url: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun.l.google.com:19302" },
       {
-        url: "turn:relay1.expressturn.com:3478",
+        urls: "turn:relay1.expressturn.com:3478",
         username: "efVUZD5UTACRXVRWPZ",
         credential: "8sySd3wS5s4NU2mR",
       },
@@ -47,53 +45,57 @@ var peer = new Peer({
 });
 
 let myVideoStream;
+const users = {}; // Store userId -> userName mapping
+
 navigator.mediaDevices
-  .getUserMedia({
-    audio: true,
-    video: false,
-  })
+  .getUserMedia({ audio: true, video: false })
   .then((stream) => {
     myVideoStream = stream;
-    addVideoStream(myVideo, stream, USER_NAME);
+    addVideoStream(myVideo, stream, peer.id);
 
     peer.on("call", (call) => {
       call.answer(stream);
       const video = document.createElement("video");
       call.on("stream", (userVideoStream) => {
-        addVideoStream(video, userVideoStream);
+        addVideoStream(video, userVideoStream, users[call.peer] || "Unknown");
       });
     });
 
-    // Receive list of already connected users
-    socket.on("existing-users", (userList) => {
-      Object.assign(users, userList);
+    socket.on("user-connected", (userId, userName) => {
+      users[userId] = userName; // Store userId to userName mapping
+      connectToNewUser(userId, userName, myVideoStream);
     });
 
-    socket.on("user-connected", (userId, userName) => {
-      users[userId] = userName; // Store username
-      connectToNewUser(userId, userName, myVideoStream);
+    socket.on("user-disconnected", (userId) => {
+      if (users[userId]) {
+        delete users[userId];
+      }
+      const videoElement = document.getElementById(userId);
+      if (videoElement) {
+        videoElement.remove();
+      }
     });
   });
 
-socket.on("user-disconnected", (userId) => {
-  if (users[userId]) delete users[userId]; // Remove from list
-  const videoElement = document.getElementById(userId);
-  if (videoElement) {
-    videoElement.remove();
-  }
-});
-
 peer.on("open", (id) => {
-  console.log(`My ID: ${id}, My Name: ${USER_NAME}`);
-  socket.emit("join-room", ROOM_ID, id, USER_NAME);
+  if (typeof USER_NAME !== "undefined" && typeof ROOM_ID !== "undefined") {
+    socket.emit("join-room", ROOM_ID, id, USER_NAME);
+  } else {
+    console.error("USER_NAME or ROOM_ID is not defined!");
+  }
 });
 
-// Function to add video stream
-const addVideoStream = (video, stream, userName = null) => {
+const connectToNewUser = (userId, userName, stream) => {
+  const call = peer.call(userId, stream);
+  const video = document.createElement("video");
+  call.on("stream", (userVideoStream) => {
+    addVideoStream(video, userVideoStream, userId);
+  });
+};
+
+const addVideoStream = (video, stream, userName = "User") => {
   video.srcObject = stream;
-  if (userName) {
-    video.id = userName;
-  }
+  video.id = userName; // Assign userName as the ID
   video.addEventListener("loadedmetadata", () => {
     video.play();
     videoGrid.append(video);
@@ -102,7 +104,6 @@ const addVideoStream = (video, stream, userName = null) => {
   detectSpeaking(stream, userName);
 };
 
-// Detect Speaking
 const detectSpeaking = (stream, userName) => {
   const audioContext = new AudioContext();
   const analyser = audioContext.createAnalyser();
@@ -116,24 +117,20 @@ const detectSpeaking = (stream, userName) => {
     analyser.getByteFrequencyData(dataArray);
     const volume = dataArray.reduce((a, b) => a + b, 0);
 
+    const videoElement = document.getElementById(userName);
     if (volume > 500) {
       const intensity = Math.min(volume / 5000, 1);
       const borderColor = `rgba(0, 255, 0, ${intensity})`;
-      const videoElement = document.getElementById(userName);
       if (videoElement) {
         videoElement.style.border = `3px solid ${borderColor}`;
       }
-
       if (window.Android) {
         Android.speakerDetected(userName, volume);
       } else {
-        console.log("Android object is not available.");
+        // console.log(`Speaker detected: ${userName}, Volume: ${volume}`);
       }
-    } else {
-      const videoElement = document.getElementById(userName);
-      if (videoElement) {
-        videoElement.style.border = `3px solid #FFFFFF`;
-      }
+    } else if (videoElement) {
+      videoElement.style.border = "3px solid #FFFFFF";
     }
 
     requestAnimationFrame(checkSpeaking);
@@ -143,56 +140,51 @@ const detectSpeaking = (stream, userName) => {
 };
 
 // Chat
-let text = document.querySelector("#chat_message");
-let send = document.getElementById("send");
-let messages = document.querySelector(".messages");
+const text = document.querySelector("#chat_message");
+const send = document.getElementById("send");
+const messages = document.querySelector(".messages");
 
-send.addEventListener("click", (e) => {
-  if (text.value.length !== 0) {
-    socket.emit("message", text.value, USER_NAME);
+send.addEventListener("click", () => {
+  if (text.value.trim().length !== 0) {
+    socket.emit("message", text.value.trim());
     text.value = "";
   }
 });
 
 text.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && text.value.length !== 0) {
-    socket.emit("message", text.value, USER_NAME);
+  if (e.key === "Enter" && text.value.trim().length !== 0) {
+    socket.emit("message", text.value.trim());
     text.value = "";
   }
 });
 
-// Invite Button
-const inviteButton = document.querySelector("#inviteButton");
-inviteButton.addEventListener("click", () => {
-  prompt("Copy this link and send it to people:", window.location.href);
-});
-
-// Mute / Unmute
+// Mute & Video Controls
 const muteButton = document.querySelector("#muteButton");
+const stopVideo = document.querySelector("#stopVideo");
+
 muteButton.addEventListener("click", () => {
   const enabled = myVideoStream.getAudioTracks()[0].enabled;
   myVideoStream.getAudioTracks()[0].enabled = !enabled;
-  muteButton.classList.toggle("background__red");
-  muteButton.innerHTML = enabled
-    ? `<img src="micoff.svg" alt="audio"/>`
-    : `<img src="micon.svg" alt="audio"/>`;
+  muteButton.classList.toggle("background__red", !enabled);
+  muteButton.innerHTML = `<img src="${enabled ? "micoff.svg" : "micon.svg"}" alt="audio" style="width: 24px; height: 24px; cursor: pointer;"/>`;
 });
 
-// Video On/Off
-const stopVideo = document.querySelector("#stopVideo");
 stopVideo.addEventListener("click", () => {
   const enabled = myVideoStream.getVideoTracks()[0].enabled;
   myVideoStream.getVideoTracks()[0].enabled = !enabled;
-  stopVideo.classList.toggle("background__red");
-  stopVideo.innerHTML = enabled
-    ? `<img src="videooff.svg" alt="video"/>`
-    : `<img src="videoon.svg" alt="video"/>`;
+  stopVideo.classList.toggle("background__red", !enabled);
+  stopVideo.innerHTML = `<img src="${enabled ? "videooff.svg" : "videoon.svg"}" alt="video" style="width: 24px; height: 24px; cursor: pointer;"/>`;
 });
 
-// Display messages
+// Invite Button
+document.querySelector("#inviteButton").addEventListener("click", () => {
+  prompt("Copy this link and send it to people you want to meet with", window.location.href);
+});
+
+// Chat Messages
 socket.on("createMessage", (message, userName) => {
   messages.innerHTML += `<div class="message">
-        <b><i class="far fa-user-circle"></i> <span> ${userName} </span> </b>
-        <span>${message}</span>
-    </div>`;
+      <b><i class="far fa-user-circle"></i> <span>${userName}</span> </b>
+      <span>${message}</span>
+  </div>`;
 });
