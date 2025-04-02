@@ -1,14 +1,14 @@
 const express = require("express");
 const http = require("http");
 const { v4: uuidv4 } = require("uuid");
-const { Server } = require("socket.io");
+const socketIO = require("socket.io");
 const { ExpressPeerServer } = require("peer");
 
 const app = express();
 const server = http.createServer(app);
 
-// Setup Socket.IO with CORS
-const io = new Server(server, {
+// FIX: Use socketIO() instead of new Server()
+const io = socketIO(server, {
   cors: {
     origin: "*",
   },
