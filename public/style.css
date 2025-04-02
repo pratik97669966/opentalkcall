@@ -5,15 +5,17 @@
   --main-dark: #161d29;
   --primary-color: #2f80ec;
   --main-light: #eeeeee;
+  --ripple-color: rgba(0, 255, 0, 0.5);
+  /* Green for speaking detection */
   font-family: "Poppins", sans-serif;
 }
 
 * {
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
 }
 
-/* 
 .header {
   display: flex;
   justify-content: center;
@@ -22,15 +24,15 @@
   position: relative;
   width: 100%;
   background-color: var(--main-darklg);
-} */
+}
 
-.logo > h3 {
+.logo>h3 {
   color: var(--main-light);
 }
 
 .main {
   overflow: hidden;
-  height: 100vh;
+  height: 92vh;
   display: flex;
 }
 
@@ -41,26 +43,62 @@
 }
 
 .videos__group {
-   flex-grow: 1;
+  flex-grow: 1;
   display: flex;
   justify-content: center;
-  align-items: center; 
+  align-items: center;
   padding: 1rem;
   background-color: var(--main-dark);
+}
 
+.video-container {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0.5rem;
+  width: 100px;
+  height: 100px;
 }
 
 video {
-   height: 0px; 
+  width: 100%;
+  height: 100%;
   border-radius: 1rem;
-  margin: 0.5rem;
-   width: 0px; 
   object-fit: cover;
   transform: rotateY(180deg);
   -webkit-transform: rotateY(180deg);
   -moz-transform: rotateY(180deg);
+  transition: border 0.2s ease;
 }
 
+/* Ripple Effect for Speaking */
+.ripple-effect {
+  position: absolute;
+  width: 120%;
+  height: 120%;
+  background: var(--ripple-color);
+  border-radius: 50%;
+  opacity: 0;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+/* Username Overlay */
+.username-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: bold;
+  display: none;
+}
+
+/* Button Options */
 .options {
   padding: 1rem;
   display: flex;
@@ -85,7 +123,13 @@ video {
   color: var(--main-light);
   font-size: 1.2rem;
   width: 50px;
-  /* margin: 0 0.5rem; */
+  margin: 0 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.options__button:hover {
+  background-color: #1e5eb9;
 }
 
 .background__red {
@@ -96,7 +140,7 @@ video {
   display: flex;
   flex-direction: column;
   flex: 0.3;
-  background-color: #ffffff;
+  background-color: #242f41;
 }
 
 .main__chat_window {
@@ -115,13 +159,13 @@ video {
   justify-content: center;
 }
 
-.main__message_container > input {
+.main__message_container>input {
   height: 50px;
-  flex: 1; 
+  flex: 1;
   font-size: 1rem;
   border-radius: 5px;
-  padding-left: 5px;
-  border: 1;
+  padding-left: 20px;
+  border: none;
 }
 
 .messages {
@@ -135,30 +179,31 @@ video {
   flex-direction: column;
 }
 
-.message > b {
-  color: #000000;
+.message>b {
+  color: #eeeeee;
   display: flex;
   align-items: center;
   text-transform: capitalize;
 }
 
-.message > b > i {
+.message>b>i {
   margin-right: 0.7rem;
   font-size: 1.5rem;
 }
 
-.message > span {
-  background-color: #efefef;
+.message>span {
+  background-color: #eeeeee;
   margin: 1rem 0;
   padding: 1rem;
   border-radius: 5px;
 }
 
+/* Video Grid */
 #video-grid {
-   display: inline-table;
-  justify-content: top;
-  overflow-x: auto;
-  overflow-y: auto;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 #showChat {
@@ -172,38 +217,33 @@ video {
   top: 17px;
   left: 28px;
   color: #fff;
-}
-#users-counter {
-  font-size: 18px;
-  display: inline-block;
-  text-align: center;
-  position: -webkit-sticky;
-  position: sticky;
-  top: 0;
-  background-color: var(--second-color);
-  color: #fff;
+  cursor: pointer;
 }
 
-#you-joined {
-  padding: 10px 0px;
-  margin: 0 18px;
-  border-bottom: 1px solid var(--border-color);
-  color: var(--text-color);
-  text-align: center;
-  font-weight: 600;
-}
 @media (max-width: 700px) {
   .main__right {
     display: none;
   }
+
   .main__left {
     width: 100%;
+    flex: 1;
+  }
+
+  .video-container {
+    width: 100%;
+    height: auto;
+    overflow: auto;
   }
 
   video {
-    height: 0%;
-    width: 0%;
+    background-color: rgb(73, 73, 73); /* Set white background for video */
+    width: 120px; /* Ensure it takes up the available space */
+    height: 120px; /* Ensure it takes up the available space */
+    object-fit: cover; /* Adjust as needed */
+    border-radius: 10px; /* Optional: Add rounded corners */
   }
+  
 
   #showChat {
     display: flex;

@@ -1,14 +1,28 @@
 const socket = io("/");
 const videoGrid = document.getElementById("video-grid");
 const myVideo = document.createElement("video");
-const usersCounter = document.getElementById('users-counter');
+const showChat = document.querySelector("#showChat");
+const backBtn = document.querySelector(".header__back");
 myVideo.muted = true;
-document.querySelector(".main__right").style.display = "flex";
-document.querySelector(".main__right").style.flex = "1";
-document.querySelector(".main__left").style.display = "none";
-const params = new URLSearchParams(window.location.search);
-const user = params.get('userName');
-var peer = new Peer(undefined, {
+
+backBtn.addEventListener("click", () => {
+  document.querySelector(".main__left").style.display = "flex";
+  document.querySelector(".main__left").style.flex = "1";
+  document.querySelector(".main__right").style.display = "none";
+  document.querySelector(".header__back").style.display = "none";
+});
+
+showChat.addEventListener("click", () => {
+  document.querySelector(".main__right").style.display = "flex";
+  document.querySelector(".main__right").style.flex = "1";
+  document.querySelector(".main__left").style.display = "none";
+  document.querySelector(".header__back").style.display = "block";
+});
+
+var peer = new Peer({
+  // host: '127.0.0.1',
+  // port: 3030,
+  // path: '/peerjs',
   path: "/peerjs",
   host: "/",
   port: "443",
@@ -22,8 +36,9 @@ var peer = new Peer(undefined, {
       },
     ],
   },
-});
 
+  debug: 3
+});
 
 let myVideoStream;
 navigator.mediaDevices
@@ -47,40 +62,66 @@ navigator.mediaDevices
       connectToNewUser(userId, stream);
     });
   });
-
+socket.on("user-disconnected", (userId) => {
+  const videoElement = document.getElementById(userId);
+  if (videoElement) {
+    videoElement.remove(); // Remove the video element from the UI
+  }
+});
 const connectToNewUser = (userId, stream) => {
+  console.log('I call someone ' + userId);
   const call = peer.call(userId, stream);
   const video = document.createElement("video");
   call.on("stream", (userVideoStream) => {
-    addVideoStream(video, userVideoStream);
-  });
-  call.on("close", () => {
-    removeVideoStream(video);
+    addVideoStream(video, userVideoStream, userId); // Pass userId here
   });
 };
 
-const removeVideoStream = (video) => {
-  video.srcObject = null;
-  video.remove();
-};
-socket.on('user-disconnected', (userId) => {
-  if (user == null) {
-    text.value = "";
-  } else {
-  }
-});
+// Use USER_NAME in your client-side code
 peer.on("open", (id) => {
-  socket.emit("join-room", ROOM_ID, id, user);
+  console.log(`My ID: ${id}, My Name: ${USER_NAME}`);
+  socket.emit("join-room", ROOM_ID, id, USER_NAME); // Send userName to the server
 });
 
-const addVideoStream = (video, stream) => {
+const addVideoStream = (video, stream, userId = null) => {
   video.srcObject = stream;
+  if (userId) {
+    video.id = userId; // Assign userId as the id of the video element
+  }
   video.addEventListener("loadedmetadata", () => {
     video.play();
-    video.width = 240; // set video width to 240 pixels
-    video.height = 180; // set video height to 180 pixels
     videoGrid.append(video);
   });
+
+  // Call detectSpeaking to monitor the audio stream
+  detectSpeaking(stream, video);
+};
+
+const detectSpeaking = (stream, videoElement) => {
+  const audioContext = new AudioContext();
+  const analyser = audioContext.createAnalyser();
+  const source = audioContext.createMediaStreamSource(stream);
+  source.connect(analyser);
+
+  analyser.fftSize = 512;
+  const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+  const checkSpeaking = () => {
+    analyser.getByteFrequencyData(dataArray);
+    const volume = dataArray.reduce((a, b) => a + b, 0);
+
+    if (volume > 500) { // Adjust this threshold based on your environment
+      const intensity = Math.min(volume / 5000, 1); // Normalize intensity (0 to 1)
+      const borderColor = `rgba(0, 255, 0, ${intensity})`; // Green border with intensity
+      videoElement.style.border = `3px solid ${borderColor}`;
+    } else {
+      videoElement.style.border = `3px solid #FFFFFF`; // Remove the border when silent
+    }
+
+    requestAnimationFrame(checkSpeaking);
+  };
+
+  checkSpeaking();
 };
 
 let text = document.querySelector("#chat_message");
@@ -89,53 +130,77 @@ let messages = document.querySelector(".messages");
 
 send.addEventListener("click", (e) => {
   if (text.value.length !== 0) {
-    let message = text.value;
-    socket.emit("message", message);
-    text.value = '';
+    socket.emit("message", text.value);
+    text.value = "";
   }
-});
-
-socket.on('broadcast', (number) => {
-  usersCounter.innerHTML = number;
 });
 
 text.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && text.value.length !== 0) {
-    let message = text.value;
-    socket.emit("message", message);
-    text.value = '';
+    socket.emit("message", text.value);
+    text.value = "";
   }
 });
-function toggleAudio(b) {
-  if (b == "true") {
-    myVideoStream.getAudioTracks()[0].enabled = true;
-  } else {
-    myVideoStream.getAudioTracks()[0].enabled = false;
-  }
-}
-function checkMatch(userMessage) {
 
-  let originalMessage = userMessage;
-  let inputMessage = userMessage.toLowerCase();
-  let result = inputMessage.match(/(asshole|ass hole|fuck off|fuck you|sucking|gspot|fuck|fuckoff|fuckface|fuckface|ass|cumbubble|bugger|cumdumpsterfuck|cocknose|wanker|fuck you|bollocks|shitbag|knobhead|twatwaffle|shit|choad|thundercunt|pissoff|bitch|tits|dickhead|knobjockey|asshole|crikey|shitpouch|cuntpuddle|dickweed|rubbish|jizzstain|dickweasel|cunt|pissflaps|nonce|quim|bitch|shag|pisskidney|bawbag|fuck|trumpet|bastard)/g);
-  //  var slangLengh = result.length;
-  //document.getElementById("matchResult").innerHTML = result;
-  console.log(result);
-  if (result != null) {
-    //Copy message to support team.
-    return 1;
+const inviteButton = document.querySelector("#inviteButton");
+const muteButton = document.querySelector("#muteButton");
+const stopVideo = document.querySelector("#stopVideo");
+function toggleAudio(enabled) {
+  if (enabled) {
+    myVideoStream.getAudioTracks()[0].enabled = false;
+    html = `<img src="micoff.svg" alt="audio"  style="width: 24px; height: 24px; cursor: pointer;"/>`;
+    muteButton.classList.toggle("background__red");
+    muteButton.innerHTML = html;
   } else {
-    return 0;
+    myVideoStream.getAudioTracks()[0].enabled = true;
+    html = `<img src="micon.svg" alt="audio"  style="width: 24px; height: 24px; cursor: pointer;"/>`;
+    muteButton.classList.toggle("background__red");
+    muteButton.innerHTML = html;
   }
 }
+muteButton.addEventListener("click", () => {
+  const enabled = myVideoStream.getAudioTracks()[0].enabled;
+  if (enabled) {
+    myVideoStream.getAudioTracks()[0].enabled = false;
+    html = `<img src="micoff.svg" alt="audio"  style="width: 24px; height: 24px; cursor: pointer;"/>`;
+    muteButton.classList.toggle("background__red");
+    muteButton.innerHTML = html;
+  } else {
+    myVideoStream.getAudioTracks()[0].enabled = true;
+    html = `<img src="micon.svg" alt="audio"  style="width: 24px; height: 24px; cursor: pointer;"/>`;
+    muteButton.classList.toggle("background__red");
+    muteButton.innerHTML = html;
+  }
+});
+
+stopVideo.addEventListener("click", () => {
+  const enabled = myVideoStream.getVideoTracks()[0].enabled;
+  if (enabled) {
+    myVideoStream.getVideoTracks()[0].enabled = false;
+    html = `<img src="videooff.svg" alt="video"  style="width: 24px; height: 24px; cursor: pointer;"/>`;
+    stopVideo.classList.toggle("background__red");
+    stopVideo.innerHTML = html;
+  } else {
+    myVideoStream.getVideoTracks()[0].enabled = true;
+    html = `<img src="videoon.svg" alt="video"  style="width: 24px; height: 24px; cursor: pointer;"/>`;
+    stopVideo.classList.toggle("background__red");
+    stopVideo.innerHTML = html;
+  }
+});
+
+inviteButton.addEventListener("click", (e) => {
+  prompt(
+    "Copy this link and send it to people you want to meet with",
+    window.location.href
+  );
+});
+
 socket.on("createMessage", (message, userName) => {
   messages.innerHTML =
     messages.innerHTML +
     `<div class="message">
-        <b><span> ${userName
+        <b><i class="far fa-user-circle"></i> <span> ${userName
     }</span> </b>
         <span>${message}</span>
     </div>`;
-  var myMessage = document.getElementsByClassName("main__chat_window")[0];
-  myMessage.scrollTop = myMessage.scrollHeight;
 });

@@ -1,6 +1,5 @@
 const express = require("express");
 const app = express();
-var profanity = require("profanity-hindi");
 const server = require("http").Server(app);
 const { v4: uuidv4 } = require("uuid");
 app.set("view engine", "ejs");
@@ -10,11 +9,11 @@ const io = require("socket.io")(server, {
   }
 });
 const { ExpressPeerServer } = require("peer");
-const peerServer = ExpressPeerServer(server, {
+const opinions = {
   debug: true,
-});
+}
 
-app.use("/peerjs", peerServer);
+app.use("/peerjs", ExpressPeerServer(server, opinions));
 app.use(express.static("public"));
 
 app.get("/", (req, res) => {
@@ -22,21 +21,26 @@ app.get("/", (req, res) => {
 });
 
 app.get("/:room", (req, res) => {
-  res.render("room", { roomId: req.params.room });
+  const userName = req.query.userName || ""; // Default to "Anonymous" if no userName is provided
+  res.render("room", { roomId: req.params.room, userName: userName });
 });
 
 io.on("connection", (socket) => {
   socket.on("join-room", (roomId, userId, userName) => {
     socket.join(roomId);
-    socket.to(roomId).broadcast.emit("user-connected", userId);
+    setTimeout(() => {
+      socket.to(roomId).broadcast.emit("user-connected", userId);
+    }, 1000);
+
     socket.on("message", (message) => {
-      var isDirty = profanity.isMessageDirty(message);
-      if (isDirty) {
-        message = "<span style='color: red;'>🚨 Using bad word may ban your account permanantly</span>";
-      }
       io.to(roomId).emit("createMessage", message, userName);
+    });
+
+    // Handle user disconnection
+    socket.on("disconnect", () => {
+      socket.to(roomId).broadcast.emit("user-disconnected", userId);
     });
   });
 });
 
-server.listen(process.env.PORT || 3000);
+server.listen(process.env.PORT || 3030);
