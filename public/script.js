@@ -10,6 +10,9 @@ const params = new URLSearchParams(window.location.search);
 const user = params.get('userName');
 console.log("userconnected");
 var peer = new Peer(undefined, {
+  // host: '127.0.0.1',
+  // port: 3030,
+  // path: '/peerjs',
   path: "/peerjs",
   host: "/",
   port: "443",
