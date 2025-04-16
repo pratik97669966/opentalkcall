@@ -10,17 +10,14 @@ const params = new URLSearchParams(window.location.search);
 const user = params.get('userName');
 console.log("userconnected");
 var peer = new Peer(undefined, {
-  // host: '127.0.0.1',
-  // port: 3030,
-  // path: '/peerjs',
   path: "/peerjs",
   host: "/",
   port: "443",
   config: {
     iceServers: [
-      { urls: "stun:stun.l.google.com:19302" },
+      { url: "stun:stun.l.google.com:19302" }, // Public Google STUN server
       {
-        urls: "turn:relay1.expressturn.com:3478",
+        url: "turn:relay1.expressturn.com:3478",
         username: "efVUZD5UTACRXVRWPZ",
         credential: "8sySd3wS5s4NU2mR",
       },
