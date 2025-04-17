@@ -1,42 +1,67 @@
+// ===========================
+// ✅ server.js (Complete)
+// ===========================
+
 const express = require("express");
-const app = express();
-var profanity = require("profanity-hindi");
-const server = require("http").Server(app);
+const http = require("http");
 const { v4: uuidv4 } = require("uuid");
-app.set("view engine", "ejs");
-const io = require("socket.io")(server, {
-  cors: {
-    origin: '*'
-  }
-});
+const socketIO = require("socket.io");
 const { ExpressPeerServer } = require("peer");
-const peerServer = ExpressPeerServer(server, {
-  debug: true,
+
+const app = express();
+const server = http.createServer(app);
+const io = socketIO(server, {
+  cors: { origin: "*" },
 });
 
-app.use("/peerjs", peerServer);
+const peerServerOptions = { debug: true };
+app.use("/peerjs", ExpressPeerServer(server, peerServerOptions));
 app.use(express.static("public"));
+app.set("view engine", "ejs");
 
 app.get("/", (req, res) => {
   res.redirect(`/${uuidv4()}`);
 });
 
 app.get("/:room", (req, res) => {
-  res.render("room", { roomId: req.params.room });
+  const userName = req.query.userName || "Anonymous";
+  res.render("room", { roomId: req.params.room, userName });
 });
+
+const roomUsers = {}; // { roomId: { userId: userName } }
 
 io.on("connection", (socket) => {
   socket.on("join-room", (roomId, userId, userName) => {
+    if (!roomId || !userId) return;
     socket.join(roomId);
-    socket.to(roomId).broadcast.emit("user-connected", userId);
+
+    if (!roomUsers[roomId]) roomUsers[roomId] = {};
+    roomUsers[roomId][userId] = userName;
+
+    const fullList = Object.entries(roomUsers[roomId]).map(([id, name]) => ({ userId: id, userName: name }));
+    socket.emit("existing-users", fullList);
+
+    socket.to(roomId).emit("user-connected", userId, userName);
+
     socket.on("message", (message) => {
-      var isDirty = profanity.isMessageDirty(message);
-      if (isDirty) {
-        message = "<span style='color: red;'>🚨 Using bad word may ban your account permanantly</span>";
-      }
       io.to(roomId).emit("createMessage", message, userName);
     });
+
+    socket.on("disconnect", () => {
+      if (roomUsers[roomId]) {
+        delete roomUsers[roomId][userId];
+        socket.to(roomId).emit("user-disconnected", userId);
+        if (Object.keys(roomUsers[roomId]).length === 0) delete roomUsers[roomId];
+      }
+    });
+  });
+
+  socket.on("error", (err) => {
+    console.error("⚠️ Socket error:", err);
   });
 });
 
-server.listen(process.env.PORT || 3000);
+const PORT = process.env.PORT || 3030;
+server.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
