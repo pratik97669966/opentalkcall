@@ -29,7 +29,7 @@ document.querySelector(".main__left").style.display = "none";
 const peer = new Peer(undefined, {
   path: "/peerjs",
   host: "/",
-  port: "3000",
+  port: "443",
   config: {
     iceServers: [
       { url: "stun:stun.l.google.com:19302" },
@@ -146,6 +146,8 @@ socket.on("createMessage", (message, userName, timestamp, replyText = null) => {
   });
   if (userName !== user) {
     try { receiveAudio.play(); } catch (e) { console.warn("Receive tone blocked:", e); }
+  } else {
+    try { send.play(); } catch (e) { console.warn("Receive tone blocked:", e); }
   }
 
 });
