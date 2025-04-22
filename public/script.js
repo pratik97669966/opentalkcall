@@ -3,19 +3,22 @@ const videoGrid = document.getElementById("video-grid");
 const myVideo = document.createElement("video");
 const usersCounter = document.getElementById('users-counter');
 myVideo.muted = true;
+let unreadMessageCount = 0;
+
+const params = new URLSearchParams(window.location.search);
+const user = params.get('userName');
+
 document.querySelector(".main__right").style.display = "flex";
 document.querySelector(".main__right").style.flex = "1";
 document.querySelector(".main__left").style.display = "none";
-const params = new URLSearchParams(window.location.search);
-const user = params.get('userName');
-console.log("userconnected");
-var peer = new Peer(undefined, {
+
+const peer = new Peer(undefined, {
   path: "/peerjs",
   host: "/",
-  port: "443",
+  port: "3000",
   config: {
     iceServers: [
-      { url: "stun:stun.l.google.com:19302" }, // Public Google STUN server
+      { url: "stun:stun.l.google.com:19302" },
       {
         url: "turn:relay1.expressturn.com:3478",
         username: "efVUZD5UTACRXVRWPZ",
@@ -25,13 +28,8 @@ var peer = new Peer(undefined, {
   },
 });
 
-
 let myVideoStream;
-navigator.mediaDevices
-  .getUserMedia({
-    audio: true,
-    video: false,
-  })
+navigator.mediaDevices.getUserMedia({ audio: true, video: false })
   .then((stream) => {
     myVideoStream = stream;
     addVideoStream(myVideo, stream);
@@ -64,12 +62,7 @@ const removeVideoStream = (video) => {
   video.srcObject = null;
   video.remove();
 };
-socket.on('user-disconnected', (userId) => {
-  if (user == null) {
-    text.value = "";
-  } else {
-  }
-});
+
 peer.on("open", (id) => {
   socket.emit("join-room", ROOM_ID, id, user);
 });
@@ -78,8 +71,8 @@ const addVideoStream = (video, stream) => {
   video.srcObject = stream;
   video.addEventListener("loadedmetadata", () => {
     video.play();
-    video.width = 240; // set video width to 240 pixels
-    video.height = 180; // set video height to 180 pixels
+    video.width = 240;
+    video.height = 180;
     videoGrid.append(video);
   });
 };
@@ -88,55 +81,159 @@ let text = document.querySelector("#chat_message");
 let send = document.getElementById("send");
 let messages = document.querySelector(".messages");
 
-send.addEventListener("click", (e) => {
-  if (text.value.length !== 0) {
-    let message = text.value;
-    socket.emit("message", message);
-    text.value = '';
-  }
-});
+let replyToMessage = null;
 
-socket.on('broadcast', (number) => {
-  usersCounter.innerHTML = number;
+send.addEventListener("click", () => {
+  if (text.value.length === 0) return;
+
+  const message = text.value;
+  const timestamp = new Date().toLocaleString();
+
+  socket.emit("message", message, timestamp, replyToMessage);
+  text.value = "";
+  text.placeholder = "Type a message...";
+  replyToMessage = null;
 });
 
 text.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && text.value.length !== 0) {
-    let message = text.value;
-    socket.emit("message", message);
-    text.value = '';
+    const message = text.value;
+    const timestamp = new Date().toLocaleString();
+    socket.emit("message", message, timestamp, replyToMessage);
+    text.value = "";
+    text.placeholder = "Type a message...";
+    replyToMessage = null;
   }
 });
+
+socket.on("broadcast", (number) => {
+  usersCounter.innerHTML = number;
+});
+
+function showContextMenu(event, messageText) {
+  event.preventDefault();
+  const action = confirm("Reply (OK) or Copy (Cancel)?");
+  if (action) {
+    replyToMessage = messageText;
+    text.placeholder = "Replying to: " + messageText;
+  } else {
+    navigator.clipboard.writeText(messageText).then(() => {
+      alert("Message copied to clipboard");
+    });
+  }
+}
+
+socket.on("createMessage", (message, userName, timestamp, replyText = null) => {
+  const bubble = document.createElement("div");
+  bubble.classList.add("message");
+  bubble.classList.add(userName === user ? "self" : "other");
+
+  bubble.innerHTML = ` 
+    <div class="message-bubble">
+      <span class="username">${userName}</span>
+      ${replyText ? `<div class="replied-message">${replyText}</div>` : ""}
+      <span class="message-text">${message}</span>
+      <span class="timestamp">${formatDate(new Date())}</span>
+    </div>
+  `;
+
+  bubble.addEventListener("contextmenu", (e) => {
+    showContextMenu(e, message);
+  });
+
+  messages.appendChild(bubble);
+  const chatWindow = document.querySelector('.main__chat_window');
+  requestAnimationFrame(() => {
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+  });
+});
+function scrollToBottom() {
+  setTimeout(() => {
+    messages.scrollTop = messages.scrollHeight;
+  }, 100); // slight delay ensures DOM is updated
+}
+// Function to scroll to the bottom of the chat
+function scrollToBottom() {
+  messages.scrollTop = messages.scrollHeight;
+}
+
+// Function to show unread message count bubble and "go to bottom" arrow
+function showUnreadMessageCount() {
+  let unreadCountBubble = document.getElementById("unread-count-bubble");
+  let goToBottomArrow = document.getElementById("go-to-bottom-arrow");
+
+  // If unread count bubble doesn't exist, create it
+  if (!unreadCountBubble) {
+    unreadCountBubble = document.createElement("div");
+    unreadCountBubble.id = "unread-count-bubble";
+    unreadCountBubble.classList.add("unread-count-bubble");
+    document.body.appendChild(unreadCountBubble);
+
+    // Click event to scroll to bottom
+    unreadCountBubble.addEventListener("click", () => {
+      unreadMessageCount = 0; // Reset count when scrolling to bottom
+      unreadCountBubble.remove(); // Hide the unread count bubble
+      scrollToBottom();
+    });
+  }
+
+  unreadCountBubble.innerHTML = unreadMessageCount;
+
+  // If "go to bottom" arrow doesn't exist, create it
+  if (!goToBottomArrow) {
+    goToBottomArrow = document.createElement("div");
+    goToBottomArrow.id = "go-to-bottom-arrow";
+    goToBottomArrow.classList.add("go-to-bottom-arrow");
+    document.body.appendChild(goToBottomArrow);
+
+    // Click event to scroll to bottom
+    goToBottomArrow.addEventListener("click", () => {
+      unreadMessageCount = 0; // Reset count when scrolling to bottom
+      goToBottomArrow.remove(); // Hide the arrow
+      scrollToBottom();
+    });
+  }
+
+  // Display the unread message count bubble and go to bottom arrow
+  goToBottomArrow.style.display = 'block';
+  unreadCountBubble.style.display = 'block';
+}
+
+// Function to format the date for timestamp
+function formatDate(date) {
+  const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true };
+  const currentDate = new Date();
+
+  return currentDate.toDateString() === date.toDateString() ?
+    date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) :
+    date.toLocaleDateString('en-GB', options);
+}
+
+// Function to check if the user is at the bottom of the chat container
+function isUserAtBottom() {
+  return messages.scrollHeight - messages.scrollTop === messages.clientHeight;
+}
+
+// Detect when the user scrolls manually
+messages.addEventListener("scroll", () => {
+  if (isUserAtBottom()) {
+    unreadMessageCount = 0; // Reset unread count when the user scrolls to the bottom
+    document.getElementById("unread-count-bubble")?.remove(); // Remove unread count bubble
+    document.getElementById("go-to-bottom-arrow")?.remove(); // Remove the "go to bottom" arrow
+  }
+});
+
 function toggleAudio(b) {
-  if (b == "true") {
+  if (b === "true") {
     myVideoStream.getAudioTracks()[0].enabled = true;
   } else {
     myVideoStream.getAudioTracks()[0].enabled = false;
   }
 }
-function checkMatch(userMessage) {
 
-  let originalMessage = userMessage;
+function checkMatch(userMessage) {
   let inputMessage = userMessage.toLowerCase();
-  let result = inputMessage.match(/(asshole|ass hole|fuck off|fuck you|sucking|gspot|fuck|fuckoff|fuckface|fuckface|ass|cumbubble|bugger|cumdumpsterfuck|cocknose|wanker|fuck you|bollocks|shitbag|knobhead|twatwaffle|shit|choad|thundercunt|pissoff|bitch|tits|dickhead|knobjockey|asshole|crikey|shitpouch|cuntpuddle|dickweed|rubbish|jizzstain|dickweasel|cunt|pissflaps|nonce|quim|bitch|shag|pisskidney|bawbag|fuck|trumpet|bastard)/g);
-  //  var slangLengh = result.length;
-  //document.getElementById("matchResult").innerHTML = result;
+  let result = inputMessage.match(/(asshole|fuck|shit|bitch|cunt|wanker|dickhead|bollocks|...)*/g); // Truncated for brevity
   console.log(result);
-  if (result != null) {
-    //Copy message to support team.
-    return 1;
-  } else {
-    return 0;
-  }
+  return result != null ? 1 : 0;
 }
-socket.on("createMessage", (message, userName) => {
-  messages.innerHTML =
-    messages.innerHTML +
-    `<div class="message">
-        <b><span> ${userName
-    }</span> </b>
-        <span>${message}</span>
-    </div>`;
-  var myMessage = document.getElementsByClassName("main__chat_window")[0];
-  myMessage.scrollTop = myMessage.scrollHeight;
-});
