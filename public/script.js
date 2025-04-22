@@ -110,19 +110,6 @@ socket.on("broadcast", (number) => {
   usersCounter.innerHTML = number;
 });
 
-function showContextMenu(event, messageText) {
-  event.preventDefault();
-  const action = confirm("Reply (OK) or Copy (Cancel)?");
-  if (action) {
-    replyToMessage = messageText;
-    text.placeholder = "Replying to: " + messageText;
-  } else {
-    navigator.clipboard.writeText(messageText).then(() => {
-      alert("Message copied to clipboard");
-    });
-  }
-}
-
 socket.on("createMessage", (message, userName, timestamp, replyText = null) => {
   const bubble = document.createElement("div");
   bubble.classList.add("message");
@@ -136,10 +123,6 @@ socket.on("createMessage", (message, userName, timestamp, replyText = null) => {
       <span class="timestamp">${formatDate(new Date())}</span>
     </div>
   `;
-
-  bubble.addEventListener("contextmenu", (e) => {
-    showContextMenu(e, message);
-  });
 
   messages.appendChild(bubble);
   const chatWindow = document.querySelector('.main__chat_window');
