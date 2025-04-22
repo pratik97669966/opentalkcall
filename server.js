@@ -1,67 +1,42 @@
-// ===========================
-// ✅ server.js (Complete)
-// ===========================
-
 const express = require("express");
-const http = require("http");
-const { v4: uuidv4 } = require("uuid");
-const socketIO = require("socket.io");
-const { ExpressPeerServer } = require("peer");
-
 const app = express();
-const server = http.createServer(app);
-const io = socketIO(server, {
-  cors: { origin: "*" },
+var profanity = require("profanity-hindi");
+const server = require("http").Server(app);
+const { v4: uuidv4 } = require("uuid");
+app.set("view engine", "ejs");
+const io = require("socket.io")(server, {
+  cors: {
+    origin: '*'
+  }
+});
+const { ExpressPeerServer } = require("peer");
+const peerServer = ExpressPeerServer(server, {
+  debug: true,
 });
 
-const peerServerOptions = { debug: true };
-app.use("/peerjs", ExpressPeerServer(server, peerServerOptions));
+app.use("/peerjs", peerServer);
 app.use(express.static("public"));
-app.set("view engine", "ejs");
 
 app.get("/", (req, res) => {
   res.redirect(`/${uuidv4()}`);
 });
 
 app.get("/:room", (req, res) => {
-  const userName = req.query.userName || "Anonymous";
-  res.render("room", { roomId: req.params.room, userName });
+  res.render("room", { roomId: req.params.room });
 });
-
-const roomUsers = {}; // { roomId: { userId: userName } }
 
 io.on("connection", (socket) => {
   socket.on("join-room", (roomId, userId, userName) => {
-    if (!roomId || !userId) return;
     socket.join(roomId);
-
-    if (!roomUsers[roomId]) roomUsers[roomId] = {};
-    roomUsers[roomId][userId] = userName;
-
-    const fullList = Object.entries(roomUsers[roomId]).map(([id, name]) => ({ userId: id, userName: name }));
-    socket.emit("existing-users", fullList);
-
-    socket.to(roomId).emit("user-connected", userId, userName);
-
+    socket.to(roomId).broadcast.emit("user-connected", userId);
     socket.on("message", (message) => {
+      var isDirty = profanity.isMessageDirty(message);
+      if (isDirty) {
+        message = "<span style='color: red;'>🚨 Using bad word may ban your account permanantly</span>";
+      }
       io.to(roomId).emit("createMessage", message, userName);
     });
-
-    socket.on("disconnect", () => {
-      if (roomUsers[roomId]) {
-        delete roomUsers[roomId][userId];
-        socket.to(roomId).emit("user-disconnected", userId);
-        if (Object.keys(roomUsers[roomId]).length === 0) delete roomUsers[roomId];
-      }
-    });
-  });
-
-  socket.on("error", (err) => {
-    console.error("⚠️ Socket error:", err);
   });
 });
 
-const PORT = process.env.PORT || 3030;
-server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+server.listen(process.env.PORT || 3000);
