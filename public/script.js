@@ -4,6 +4,20 @@ const myVideo = document.createElement("video");
 const usersCounter = document.getElementById('users-counter');
 myVideo.muted = true;
 let unreadMessageCount = 0;
+let sendAudio = new Audio('/assets/send.wav');
+let receiveAudio = new Audio('/assets/receive.wav');
+sendAudio.preload = "auto";
+receiveAudio.preload = "auto";
+
+// // Fix autoplay restrictions with a user interaction
+// document.addEventListener('DOMContentLoaded', () => {
+//   const unlockAudio = () => {
+//     sendAudio.play().catch(() => { });
+//     receiveAudio.play().catch(() => { });
+//     document.removeEventListener('click', unlockAudio);
+//   };
+//   document.addEventListener('click', unlockAudio);
+// });
 
 const params = new URLSearchParams(window.location.search);
 const user = params.get('userName');
@@ -15,7 +29,7 @@ document.querySelector(".main__left").style.display = "none";
 const peer = new Peer(undefined, {
   path: "/peerjs",
   host: "/",
-  port: "443",
+  port: "3000",
   config: {
     iceServers: [
       { url: "stun:stun.l.google.com:19302" },
@@ -93,6 +107,7 @@ send.addEventListener("click", () => {
   text.value = "";
   text.placeholder = "Type a message...";
   replyToMessage = null;
+  try { sendAudio.play(); } catch (e) { console.warn("Send tone blocked:", e); }
 });
 
 text.addEventListener("keydown", (e) => {
@@ -129,6 +144,10 @@ socket.on("createMessage", (message, userName, timestamp, replyText = null) => {
   requestAnimationFrame(() => {
     chatWindow.scrollTop = chatWindow.scrollHeight;
   });
+  if (userName !== user) {
+    try { receiveAudio.play(); } catch (e) { console.warn("Receive tone blocked:", e); }
+  }
+
 });
 function scrollToBottom() {
   setTimeout(() => {
