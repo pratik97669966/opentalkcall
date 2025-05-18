@@ -17,7 +17,6 @@ document.querySelector(".main__right").style.display = "flex";
 document.querySelector(".main__right").style.flex = "1";
 document.querySelector(".main__left").style.display = "none";
 
-// PeerJS setup
 const peer = new Peer(undefined, {
   path: "/peerjs",
   host: "/",
@@ -35,38 +34,46 @@ const peer = new Peer(undefined, {
 });
 
 let myVideoStream;
+let processedStream;
 
-// High-end audio constraints
-const audioConstraints = {
-  audio: {
-    echoCancellation: true,
-    noiseSuppression: true,
-    autoGainControl: true,
-    sampleRate: 48000,
-    channelCount: 1
-  },
-  video: false
-};
+const audioContext = new AudioContext();
 
-navigator.mediaDevices.getUserMedia(audioConstraints)
-  .then((stream) => {
-    myVideoStream = stream;
-    addVideoStream(myVideo, stream);
+async function setupAudioProcessing() {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+  myVideoStream = stream;
 
-    peer.on("call", (call) => {
-      call.answer(stream);
-      const video = document.createElement("video");
-      call.on("stream", (userVideoStream) => {
-        addVideoStream(video, userVideoStream);
-      });
-    });
+  await audioContext.audioWorklet.addModule("/rnnoise-processor.js");
 
-    socket.on("user-connected", (userId) => {
-      connectToNewUser(userId, stream);
+  const micSource = audioContext.createMediaStreamSource(stream);
+  const rnnoiseNode = new AudioWorkletNode(audioContext, "rnnoise-processor");
+
+  const destination = audioContext.createMediaStreamDestination();
+  micSource.connect(rnnoiseNode).connect(destination);
+  processedStream = destination.stream;
+
+  addVideoStream(myVideo, processedStream);
+  initializePeerConnections();
+}
+
+function initializePeerConnections() {
+  peer.on("call", (call) => {
+    call.answer(processedStream);
+    const video = document.createElement("video");
+    call.on("stream", (userVideoStream) => {
+      addVideoStream(video, userVideoStream);
     });
   });
 
-const connectToNewUser = (userId, stream) => {
+  socket.on("user-connected", (userId) => {
+    connectToNewUser(userId, processedStream);
+  });
+
+  peer.on("open", (id) => {
+    socket.emit("join-room", ROOM_ID, id, user);
+  });
+}
+
+function connectToNewUser(userId, stream) {
   const call = peer.call(userId, stream);
   const video = document.createElement("video");
   call.on("stream", (userVideoStream) => {
@@ -75,18 +82,14 @@ const connectToNewUser = (userId, stream) => {
   call.on("close", () => {
     removeVideoStream(video);
   });
-};
+}
 
-const removeVideoStream = (video) => {
+function removeVideoStream(video) {
   video.srcObject = null;
   video.remove();
-};
+}
 
-peer.on("open", (id) => {
-  socket.emit("join-room", ROOM_ID, id, user);
-});
-
-const addVideoStream = (video, stream) => {
+function addVideoStream(video, stream) {
   video.srcObject = stream;
   video.addEventListener("loadedmetadata", () => {
     video.play();
@@ -94,13 +97,11 @@ const addVideoStream = (video, stream) => {
     video.height = 180;
     videoGrid.append(video);
   });
-};
+}
 
-// Chat functionality
 let text = document.querySelector("#chat_message");
 let send = document.getElementById("send");
 let messages = document.querySelector(".messages");
-
 let replyToMessage = null;
 
 send.addEventListener("click", () => {
@@ -111,7 +112,7 @@ send.addEventListener("click", () => {
   text.value = "";
   text.placeholder = "Type a message...";
   replyToMessage = null;
-  try { sendAudio.play(); } catch (e) { console.warn("Send tone blocked:", e); }
+  try { sendAudio.play(); } catch (e) { }
 });
 
 text.addEventListener("keydown", (e) => {
@@ -142,23 +143,18 @@ socket.on("createMessage", (message, userName, timestamp, replyText = null) => {
       <span class="timestamp">${formatDate(new Date())}</span>
     </div>
   `;
-
   messages.appendChild(bubble);
   const chatWindow = document.querySelector(".main__chat_window");
   requestAnimationFrame(() => {
     chatWindow.scrollTop = chatWindow.scrollHeight;
   });
-  if (userName !== user) {
-    try { receiveAudio.play(); } catch (e) { console.warn("Receive tone blocked:", e); }
-  } else {
-    try { send.play(); } catch (e) { console.warn("Send tone blocked:", e); }
-  }
+  try {
+    userName === user ? sendAudio.play() : receiveAudio.play();
+  } catch (e) { }
 });
 
 function scrollToBottom() {
-  setTimeout(() => {
-    messages.scrollTop = messages.scrollHeight;
-  }, 100);
+  messages.scrollTop = messages.scrollHeight;
 }
 
 function showUnreadMessageCount() {
@@ -170,7 +166,6 @@ function showUnreadMessageCount() {
     unreadCountBubble.id = "unread-count-bubble";
     unreadCountBubble.classList.add("unread-count-bubble");
     document.body.appendChild(unreadCountBubble);
-
     unreadCountBubble.addEventListener("click", () => {
       unreadMessageCount = 0;
       unreadCountBubble.remove();
@@ -185,7 +180,6 @@ function showUnreadMessageCount() {
     goToBottomArrow.id = "go-to-bottom-arrow";
     goToBottomArrow.classList.add("go-to-bottom-arrow");
     document.body.appendChild(goToBottomArrow);
-
     goToBottomArrow.addEventListener("click", () => {
       unreadMessageCount = 0;
       goToBottomArrow.remove();
@@ -198,16 +192,8 @@ function showUnreadMessageCount() {
 }
 
 function formatDate(date) {
-  const options = {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  };
+  const options = { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: true };
   const currentDate = new Date();
-
   return currentDate.toDateString() === date.toDateString()
     ? date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true })
     : date.toLocaleDateString("en-GB", options);
@@ -226,16 +212,15 @@ messages.addEventListener("scroll", () => {
 });
 
 function toggleAudio(b) {
-  if (b === "true") {
-    myVideoStream.getAudioTracks()[0].enabled = true;
-  } else {
-    myVideoStream.getAudioTracks()[0].enabled = false;
-  }
+  if (!myVideoStream) return;
+  myVideoStream.getAudioTracks()[0].enabled = b === "true";
 }
 
 function checkMatch(userMessage) {
   let inputMessage = userMessage.toLowerCase();
   let result = inputMessage.match(/(asshole|fuck|shit|bitch|cunt|wanker|dickhead|bollocks|...)*/g);
-  console.log(result);
   return result != null ? 1 : 0;
 }
+
+// Start audio processing
+setupAudioProcessing();
