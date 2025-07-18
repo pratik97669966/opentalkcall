@@ -104,14 +104,18 @@ let messages = document.querySelector(".messages");
 let replyToMessage = null;
 
 send.addEventListener("click", () => {
-  if (text.value.length === 0) return;
-  const message = text.value;
+  const message = text.value.trim();
+  if (!message) return;
   const timestamp = new Date().toLocaleString();
   socket.emit("message", message, timestamp, replyToMessage);
   text.value = "";
   text.placeholder = "Type a message...";
   replyToMessage = null;
-  try { sendAudio.play(); } catch (e) { console.warn("Send tone blocked:", e); }
+  try {
+    sendAudio.play();
+  } catch (e) {
+    console.warn("Send tone blocked:", e);
+  }
 });
 
 text.addEventListener("keydown", (e) => {
