@@ -26,9 +26,9 @@ const peer = new Peer(undefined, {
     iceServers: [
       { url: "stun:stun.l.google.com:19302" },
       {
-        url: "turn:relay1.expressturn.com:3478",
-        username: "efVUZD5UTACRXVRWPZ",
-        credential: "8sySd3wS5s4NU2mR",
+        url: "turn:relay1.expressturn.com:3480",
+        username: "000000002073650795",
+        credential: "D+SjhkEAEBB9E1OTPo9PvIZv0yY=",
       },
     ],
   },
