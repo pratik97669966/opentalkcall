@@ -1,8 +1,11 @@
 const socket = io("/");
 const videoGrid = document.getElementById("video-grid");
-const myVideo = document.createElement("video");
+const myAudio = document.createElement("audio");
+myAudio.muted = true;
+
 const usersCounter = document.getElementById("users-counter");
-myVideo.muted = true;
+let myStream;
+const peers = {}; // userId -> call/audio element
 
 let unreadMessageCount = 0;
 let sendAudio = new Audio("/assets/send.wav");
@@ -17,26 +20,7 @@ document.querySelector(".main__right").style.display = "flex";
 document.querySelector(".main__right").style.flex = "1";
 document.querySelector(".main__left").style.display = "none";
 
-// PeerJS setup
-const peer = new Peer(undefined, {
-  path: "/peerjs",
-  host: "/",
-  port: "443",
-  config: {
-    iceServers: [
-      { url: "stun:stun.l.google.com:19302" },
-      {
-        url: "turn:relay1.expressturn.com:3480",
-        username: "000000002075222842",
-        credential: "giRm2TkcSMy0xCw97M7YdGpOD10=",
-      },
-    ],
-  },
-});
-
-let myVideoStream;
-
-// High-end audio constraints
+// High-quality audio constraints
 const audioConstraints = {
   audio: {
     echoCancellation: true,
@@ -48,62 +32,86 @@ const audioConstraints = {
   video: false
 };
 
-navigator.mediaDevices.getUserMedia(audioConstraints)
-  .then((stream) => {
-    myVideoStream = stream;
-    addVideoStream(myVideo, stream);
+// PeerJS setup
+const peer = new Peer(undefined, {
+  path: "/peerjs",
+  host: "/",
+  port: 443,
+  secure: true,
+  config: {
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
+      {
+        urls: "turn:relay1.expressturn.com:3480",
+        username: "000000002075222842",
+        credential: "giRm2TkcSMy0xCw97M7YdGpOD10="
+      }
+    ]
+  }
+});
 
-    peer.on("call", (call) => {
+// Get user audio
+navigator.mediaDevices.getUserMedia(audioConstraints)
+  .then(stream => {
+    myStream = stream;
+    addAudioStream(myAudio, stream, "self");
+
+    // Answer incoming calls
+    peer.on("call", call => {
       call.answer(stream);
-      const video = document.createElement("video");
-      call.on("stream", (userVideoStream) => {
-        addVideoStream(video, userVideoStream);
-      });
+      const audio = document.createElement("audio");
+      call.on("stream", userAudio => addAudioStream(audio, userAudio, call.peer));
+      call.on("close", () => removeAudioStream(call.peer));
+      peers[call.peer] = call;
     });
 
-    socket.on("user-connected", (userId) => {
+    // New user joined
+    socket.on("user-connected", ({ userId }) => {
       connectToNewUser(userId, stream);
     });
   });
 
-const connectToNewUser = (userId, stream) => {
+// Connect to a new user
+function connectToNewUser(userId, stream) {
+  if (peers[userId]) return; // already connected
   const call = peer.call(userId, stream);
-  const video = document.createElement("video");
-  call.on("stream", (userVideoStream) => {
-    addVideoStream(video, userVideoStream);
-  });
-  call.on("close", () => {
-    removeVideoStream(video);
-  });
-};
+  const audio = document.createElement("audio");
+  call.on("stream", userAudio => addAudioStream(audio, userAudio, userId));
+  call.on("close", () => removeAudioStream(userId));
+  peers[userId] = call;
+}
 
-const removeVideoStream = (video) => {
-  video.srcObject = null;
-  video.remove();
-};
+// Add audio element
+function addAudioStream(audio, stream, id) {
+  audio.srcObject = stream;
+  audio.autoplay = true;
+  videoGrid.append(audio);
+  if (id !== "self") peers[id] = audio;
+}
 
-peer.on("open", (id) => {
+// Remove audio element
+function removeAudioStream(userId) {
+  if (!peers[userId]) return;
+  if (peers[userId].srcObject) peers[userId].srcObject = null;
+  if (peers[userId].remove) peers[userId].remove();
+  delete peers[userId];
+}
+
+// Peer open -> join room
+peer.on("open", id => {
   socket.emit("join-room", ROOM_ID, id, user);
 });
-
-const addVideoStream = (video, stream) => {
-  video.srcObject = stream;
-  video.addEventListener("loadedmetadata", () => {
-    video.play();
-    video.width = 240;
-    video.height = 180;
-    videoGrid.append(video);
-  });
-};
 
 // Chat functionality
 let text = document.querySelector("#chat_message");
 let send = document.getElementById("send");
 let messages = document.querySelector(".messages");
-
 let replyToMessage = null;
 
-send.addEventListener("click", () => {
+send.addEventListener("click", () => sendMessage());
+text.addEventListener("keydown", e => { if (e.key === "Enter") sendMessage(); });
+
+function sendMessage() {
   const message = text.value.trim();
   if (!message) return;
   const timestamp = new Date().toLocaleString();
@@ -111,33 +119,13 @@ send.addEventListener("click", () => {
   text.value = "";
   text.placeholder = "Type a message...";
   replyToMessage = null;
-  try {
-    sendAudio.play();
-  } catch (e) {
-    console.warn("Send tone blocked:", e);
-  }
-});
+  try { sendAudio.play(); } catch { }
+}
 
-text.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && text.value.length !== 0) {
-    const message = text.value;
-    const timestamp = new Date().toLocaleString();
-    socket.emit("message", message, timestamp, replyToMessage);
-    text.value = "";
-    text.placeholder = "Type a message...";
-    replyToMessage = null;
-  }
-});
-
-socket.on("broadcast", (number) => {
-  usersCounter.innerHTML = number;
-});
-
+// Receive chat messages
 socket.on("createMessage", (message, userName, timestamp, replyText = null) => {
   const bubble = document.createElement("div");
-  bubble.classList.add("message");
-  bubble.classList.add(userName === user ? "self" : "other");
-
+  bubble.classList.add("message", userName === user ? "self" : "other");
   bubble.innerHTML = `
     <div class="message-bubble">
       <span class="username">${userName}</span>
@@ -146,100 +134,24 @@ socket.on("createMessage", (message, userName, timestamp, replyText = null) => {
       <span class="timestamp">${formatDate(new Date())}</span>
     </div>
   `;
-
   messages.appendChild(bubble);
   const chatWindow = document.querySelector(".main__chat_window");
-  requestAnimationFrame(() => {
-    chatWindow.scrollTop = chatWindow.scrollHeight;
-  });
-  if (userName !== user) {
-    try { receiveAudio.play(); } catch (e) { console.warn("Receive tone blocked:", e); }
-  } else {
-    try { send.play(); } catch (e) { console.warn("Send tone blocked:", e); }
-  }
+  requestAnimationFrame(() => { chatWindow.scrollTop = chatWindow.scrollHeight; });
+  if (userName !== user) try { receiveAudio.play(); } catch { }
+  else try { send.play(); } catch { }
 });
 
-function scrollToBottom() {
-  setTimeout(() => {
-    messages.scrollTop = messages.scrollHeight;
-  }, 100);
+// Broadcast user count
+socket.on("broadcast", number => { usersCounter.innerHTML = number; });
+
+// Audio toggle
+function toggleAudio(enabled) {
+  if (myStream && myStream.getAudioTracks().length > 0) {
+    myStream.getAudioTracks()[0].enabled = enabled;
+  }
 }
 
-function showUnreadMessageCount() {
-  let unreadCountBubble = document.getElementById("unread-count-bubble");
-  let goToBottomArrow = document.getElementById("go-to-bottom-arrow");
-
-  if (!unreadCountBubble) {
-    unreadCountBubble = document.createElement("div");
-    unreadCountBubble.id = "unread-count-bubble";
-    unreadCountBubble.classList.add("unread-count-bubble");
-    document.body.appendChild(unreadCountBubble);
-
-    unreadCountBubble.addEventListener("click", () => {
-      unreadMessageCount = 0;
-      unreadCountBubble.remove();
-      scrollToBottom();
-    });
-  }
-
-  unreadCountBubble.innerHTML = unreadMessageCount;
-
-  if (!goToBottomArrow) {
-    goToBottomArrow = document.createElement("div");
-    goToBottomArrow.id = "go-to-bottom-arrow";
-    goToBottomArrow.classList.add("go-to-bottom-arrow");
-    document.body.appendChild(goToBottomArrow);
-
-    goToBottomArrow.addEventListener("click", () => {
-      unreadMessageCount = 0;
-      goToBottomArrow.remove();
-      scrollToBottom();
-    });
-  }
-
-  goToBottomArrow.style.display = "block";
-  unreadCountBubble.style.display = "block";
-}
-
+// Utils
 function formatDate(date) {
-  const options = {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  };
-  const currentDate = new Date();
-
-  return currentDate.toDateString() === date.toDateString()
-    ? date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true })
-    : date.toLocaleDateString("en-GB", options);
-}
-
-function isUserAtBottom() {
-  return messages.scrollHeight - messages.scrollTop === messages.clientHeight;
-}
-
-messages.addEventListener("scroll", () => {
-  if (isUserAtBottom()) {
-    unreadMessageCount = 0;
-    document.getElementById("unread-count-bubble")?.remove();
-    document.getElementById("go-to-bottom-arrow")?.remove();
-  }
-});
-
-function toggleAudio(b) {
-  if (b === "true") {
-    myVideoStream.getAudioTracks()[0].enabled = true;
-  } else {
-    myVideoStream.getAudioTracks()[0].enabled = false;
-  }
-}
-
-function checkMatch(userMessage) {
-  let inputMessage = userMessage.toLowerCase();
-  let result = inputMessage.match(/(asshole|fuck|shit|bitch|cunt|wanker|dickhead|bollocks|...)*/g);
-  console.log(result);
-  return result != null ? 1 : 0;
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true });
 }
