@@ -1,64 +1,42 @@
 const express = require("express");
 const app = express();
-const http = require("http");
-const server = http.createServer(app);
+var profanity = require("profanity-hindi");
+const server = require("http").Server(app);
 const { v4: uuidv4 } = require("uuid");
-const { ExpressPeerServer } = require("peer");
-const socketio = require("socket.io");
-const profanity = require("profanity-hindi");
-
-// PeerJS server for signaling
-const peerServer = ExpressPeerServer(server, { debug: true, path: "/peerjs" });
-app.use("/peerjs", peerServer);
-
-// Static files and EJS template
-app.use(express.static("public"));
 app.set("view engine", "ejs");
+const io = require("socket.io")(server, {
+  cors: {
+    origin: '*'
+  }
+});
+const { ExpressPeerServer } = require("peer");
+const peerServer = ExpressPeerServer(server, {
+  debug: true,
+});
 
-// Rooms storage
-const usersInRoom = {}; // roomId -> { socketId: {userId, userName} }
+app.use("/peerjs", peerServer);
+app.use(express.static("public"));
 
-// Routes
-app.get("/", (req, res) => res.redirect(`/${uuidv4()}`));
-app.get("/:room", (req, res) => res.render("room", { roomId: req.params.room }));
+app.get("/", (req, res) => {
+  res.redirect(`/${uuidv4()}`);
+});
 
-// Socket.io server
-const io = socketio(server, { cors: { origin: "*" } });
+app.get("/:room", (req, res) => {
+  res.render("room", { roomId: req.params.room });
+});
 
-io.on("connection", socket => {
-  console.log("New socket connected:", socket.id);
-
+io.on("connection", (socket) => {
   socket.on("join-room", (roomId, userId, userName) => {
     socket.join(roomId);
-
-    if (!usersInRoom[roomId]) usersInRoom[roomId] = {};
-    usersInRoom[roomId][socket.id] = { userId, userName };
-
-    // Notify others in room
-    socket.to(roomId).broadcast.emit("user-connected", { userId, userName });
-
-    // Update users count
-    io.to(roomId).emit("broadcast", Object.keys(usersInRoom[roomId]).length);
-
-    // Chat messages
-    socket.on("message", (message, timestamp, replyText = null) => {
-      let cleanMessage = message;
-      if (profanity.isMessageDirty(message)) {
-        cleanMessage = "<span style='color:red;'>🚨 Using bad words is not allowed</span>";
+    socket.to(roomId).broadcast.emit("user-connected", userId);
+    socket.on("message", (message) => {
+      var isDirty = profanity.isMessageDirty(message);
+      if (isDirty) {
+        message = "<span style='color: red;'>🚨 Using bad word may ban your account permanantly</span>";
       }
-      io.to(roomId).emit("createMessage", cleanMessage, userName, timestamp, replyText);
-    });
-
-    // Handle disconnect
-    socket.on("disconnect", () => {
-      delete usersInRoom[roomId][socket.id];
-      socket.to(roomId).broadcast.emit("user-disconnected", userId);
-      io.to(roomId).emit("broadcast", Object.keys(usersInRoom[roomId]).length);
-      console.log("User disconnected:", userId);
+      io.to(roomId).emit("createMessage", message, userName);
     });
   });
 });
 
-// Start server
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(process.env.PORT || 3000);
