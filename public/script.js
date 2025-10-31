@@ -34,8 +34,8 @@ const peer = new Peer(undefined, {
       { urls: "stun:stun.services.mozilla.com" },
       {
         urls: "turn:relay1.expressturn.com:3480",
-        username: "000000002075222842",
-        credential: "giRm2TkcSMy0xCw97M7YdGpOD10="
+        username: "000000002077296916",
+        credential: "ecO3+RIm2b1ssfUiETAYNz2HtCM="
       }
     ]
   }
