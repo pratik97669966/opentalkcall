@@ -32,11 +32,29 @@ const peer = new Peer(undefined, {
       { urls: "stun:stun3.l.google.com:19302" },
       { urls: "stun:stun4.l.google.com:19302" },
       { urls: "stun:stun.services.mozilla.com" },
+{
+        urls: "stun:stun.relay.metered.ca:80",
+      },
       {
-        urls: "turn:relay1.expressturn.com:3480",
-        username: "000000002077296916",
-        credential: "ecO3+RIm2b1ssfUiETAYNz2HtCM="
-      }
+        urls: "turn:global.relay.metered.ca:80",
+        username: "f1025813fc14cb6734d20891",
+        credential: "qrpq0LEqpQekKwOx",
+      },
+      {
+        urls: "turn:global.relay.metered.ca:80?transport=tcp",
+        username: "f1025813fc14cb6734d20891",
+        credential: "qrpq0LEqpQekKwOx",
+      },
+      {
+        urls: "turn:global.relay.metered.ca:443",
+        username: "f1025813fc14cb6734d20891",
+        credential: "qrpq0LEqpQekKwOx",
+      },
+      {
+        urls: "turns:global.relay.metered.ca:443?transport=tcp",
+        username: "f1025813fc14cb6734d20891",
+        credential: "qrpq0LEqpQekKwOx",
+      },
     ]
   }
 });
