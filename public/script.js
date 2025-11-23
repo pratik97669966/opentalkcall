@@ -30,28 +30,28 @@ const peer = new Peer(undefined, {
       { urls: "stun:stun3.l.google.com:19302" },
       { urls: "stun:stun4.l.google.com:19302" },
       { urls: "stun:stun.services.mozilla.com" },
- {
+{
         urls: "stun:stun.relay.metered.ca:80",
       },
       {
         urls: "turn:global.relay.metered.ca:80",
-        username: "0b899d87caa1cb7973a6fd25",
-        credential: "hVplZQkCdqf6SNp5",
+        username: "1d4171f0fa5bc1a87a79c7de",
+        credential: "uGQLAtFBlvmD4hya",
       },
       {
         urls: "turn:global.relay.metered.ca:80?transport=tcp",
-        username: "0b899d87caa1cb7973a6fd25",
-        credential: "hVplZQkCdqf6SNp5",
+        username: "1d4171f0fa5bc1a87a79c7de",
+        credential: "uGQLAtFBlvmD4hya",
       },
       {
         urls: "turn:global.relay.metered.ca:443",
-        username: "0b899d87caa1cb7973a6fd25",
-        credential: "hVplZQkCdqf6SNp5",
+        username: "1d4171f0fa5bc1a87a79c7de",
+        credential: "uGQLAtFBlvmD4hya",
       },
       {
         urls: "turns:global.relay.metered.ca:443?transport=tcp",
-        username: "0b899d87caa1cb7973a6fd25",
-        credential: "hVplZQkCdqf6SNp5",
+        username: "1d4171f0fa5bc1a87a79c7de",
+        credential: "uGQLAtFBlvmD4hya",
       },
     ]
   }
