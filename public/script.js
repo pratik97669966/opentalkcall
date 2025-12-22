@@ -13,50 +13,122 @@ receiveAudio.preload = "auto";
 const params = new URLSearchParams(window.location.search);
 const user = params.get("userName");
 
+// Show only right panel initially
 document.querySelector(".main__right").style.display = "flex";
 document.querySelector(".main__right").style.flex = "1";
 document.querySelector(".main__left").style.display = "none";
 
+// 5 Xirsys TURN configs - rotates every 10 hours [web:26][web:30]
+const allIceConfigs = [
+  // Config 1
+  [
+    {
+      "urls": ["stun:bn-turn1.xirsys.com"]
+    },
+    {
+      "username": "DbKPwfXrz4KtlM7FpK6d5QXPGyl_p9iMw33FYW6x7YENX93zZTbYvnX4LB7RGiGnAAAAAGkGBPNnb21lcGlmODk4",
+      "credential": "0e384d54-b723-11f0-a364-0242ac140004",
+      "urls": [
+        "turn:bn-turn1.xirsys.com:80?transport=udp",
+        "turn:bn-turn1.xirsys.com:3478?transport=udp",
+        "turn:bn-turn1.xirsys.com:80?transport=tcp",
+        "turn:bn-turn1.xirsys.com:3478?transport=tcp",
+        "turns:bn-turn1.xirsys.com:443?transport=tcp",
+        "turns:bn-turn1.xirsys.com:5349?transport=tcp"
+      ]
+    }
+  ],
+  // Config 2
+  [
+    {
+      "urls": ["stun:bn-turn2.xirsys.com"]
+    },
+    {
+      "username": "vBgha3qZeRZO9dEDbaqFdZw1yC5Rg8hecZoo8G8bczaII5GwjQs0gvG-8MrPQgE0AAAAAGlIqVV2aWdvcGE1NDQy",
+      "credential": "d5abcfac-dedb-11f0-be86-0242ac140004",
+      "urls": [
+        "turn:bn-turn2.xirsys.com:80?transport=udp",
+        "turn:bn-turn2.xirsys.com:3478?transport=udp",
+        "turn:bn-turn2.xirsys.com:80?transport=tcp",
+        "turn:bn-turn2.xirsys.com:3478?transport=tcp",
+        "turns:bn-turn2.xirsys.com:443?transport=tcp",
+        "turns:bn-turn2.xirsys.com:5349?transport=tcp"
+      ]
+    }
+  ],
+  // Config 3
+  [
+    {
+      "urls": ["stun:bn-turn2.xirsys.com"]
+    },
+    {
+      "username": "i9OXzS9amIZ3PF4Y148L8qQFaZhbYIQoskGKPWkP0daKGwEWp4j-4wO8d2aue5TTAAAAAGlIqf1yYW03NDE=",
+      "credential": "39ee08ea-dedc-11f0-8fca-0242ac140004",
+      "urls": [
+        "turn:bn-turn2.xirsys.com:80?transport=udp",
+        "turn:bn-turn2.xirsys.com:3478?transport=udp",
+        "turn:bn-turn2.xirsys.com:80?transport=tcp",
+        "turn:bn-turn2.xirsys.com:3478?transport=tcp",
+        "turns:bn-turn2.xirsys.com:443?transport=tcp",
+        "turns:bn-turn2.xirsys.com:5349?transport=tcp"
+      ]
+    }
+  ],
+  // Config 4
+  [
+    {
+      "urls": ["stun:bn-turn2.xirsys.com"]
+    },
+    {
+      "username": "rWs9lAtEAu6QnZrXwQ6zQZqOmmsXEJctt_wORLWA1SwSnY6uA2y1Ta2f2JMgQOa9AAAAAGlIqrBiaGF2MTIz",
+      "credential": "a4c7d3f8-dedc-11f0-9c2b-0242ac140004",
+      "urls": [
+        "turn:bn-turn2.xirsys.com:80?transport=udp",
+        "turn:bn-turn2.xirsys.com:3478?transport=udp",
+        "turn:bn-turn2.xirsys.com:80?transport=tcp",
+        "turn:bn-turn2.xirsys.com:3478?transport=tcp",
+        "turns:bn-turn2.xirsys.com:443?transport=tcp",
+        "turns:bn-turn2.xirsys.com:5349?transport=tcp"
+      ]
+    }
+  ],
+  // Config 5
+  [
+    {
+      "urls": ["stun:bn-turn1.xirsys.com"]
+    },
+    {
+      "username": "xv1-aOqYqu7QYMQ71xy7hR2nY9PGHHxIbLulUful4jrM7LYfIAp6q0_fXAkQS8EAAAAAAGlIqxFyYW1qaTEyMw==",
+      "credential": "de471c10-dedc-11f0-a5e7-0242ac140004",
+      "urls": [
+        "turn:bn-turn1.xirsys.com:80?transport=udp",
+        "turn:bn-turn1.xirsys.com:3478?transport=udp",
+        "turn:bn-turn1.xirsys.com:80?transport=tcp",
+        "turn:bn-turn1.xirsys.com:3478?transport=tcp",
+        "turns:bn-turn1.xirsys.com:443?transport=tcp",
+        "turns:bn-turn1.xirsys.com:5349?transport=tcp"
+      ]
+    }
+  ]
+];
+
+// Rotate every 10 hours (0-9am=0, 10-19=1, 20-5=2, etc.)
+const now = new Date();
+const hours = now.getHours();
+const slotIndex = Math.floor(hours / 10) % allIceConfigs.length;
+const todayIceConfig = allIceConfigs[slotIndex];
+console.log(`Using TURN config ${slotIndex + 1} (${hours}:00-${hours + 9}:59)`);
+
+// PeerJS with rotating Xirsys TURN servers
 const peer = new Peer(undefined, {
   path: "/peerjs",
   host: "/",
   port: 443,
   secure: true,
   config: {
-    iceServers: [
-     { urls: "stun:stun.l.google.com:19302" },
-      { urls: "stun:stun1.l.google.com:19302" },
-      { urls: "stun:stun2.l.google.com:19302" },
-      { urls: "stun:stun3.l.google.com:19302" },
-      { urls: "stun:stun4.l.google.com:19302" },
-      { urls: "stun:stun.services.mozilla.com" },
-{
-        urls: "stun:stun.relay.metered.ca:80",
-      },
-      {
-        urls: "turn:global.relay.metered.ca:80",
-        username: "33d3d7badc933288cb528ad6",
-        credential: "Hj+c2wYItynciUSl",
-      },
-      {
-        urls: "turn:global.relay.metered.ca:80?transport=tcp",
-        username: "33d3d7badc933288cb528ad6",
-        credential: "Hj+c2wYItynciUSl",
-      },
-      {
-        urls: "turn:global.relay.metered.ca:443",
-        username: "33d3d7badc933288cb528ad6",
-        credential: "Hj+c2wYItynciUSl",
-      },
-      {
-        urls: "turns:global.relay.metered.ca:443?transport=tcp",
-        username: "33d3d7badc933288cb528ad6",
-        credential: "Hj+c2wYItynciUSl",
-      },
-    ]
+    iceServers: todayIceConfig
   }
 });
-
 
 let myVideoStream;
 
@@ -88,6 +160,9 @@ navigator.mediaDevices.getUserMedia(audioConstraints)
     socket.on("user-connected", (userId) => {
       connectToNewUser(userId, stream);
     });
+  })
+  .catch((err) => {
+    console.error("getUserMedia error:", err);
   });
 
 const connectToNewUser = (userId, stream) => {
@@ -124,7 +199,6 @@ const addVideoStream = (video, stream) => {
 let text = document.querySelector("#chat_message");
 let send = document.getElementById("send");
 let messages = document.querySelector(".messages");
-
 let replyToMessage = null;
 
 send.addEventListener("click", () => {
@@ -143,8 +217,8 @@ send.addEventListener("click", () => {
 });
 
 text.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && text.value.length !== 0) {
-    const message = text.value;
+  if (e.key === "Enter" && text.value.trim().length !== 0) {
+    const message = text.value.trim();
     const timestamp = new Date().toLocaleString();
     socket.emit("message", message, timestamp, replyToMessage);
     text.value = "";
@@ -167,7 +241,7 @@ socket.on("createMessage", (message, userName, timestamp, replyText = null) => {
       <span class="username">${userName}</span>
       ${replyText ? `<div class="replied-message">${replyText}</div>` : ""}
       <span class="message-text">${message}</span>
-      <span class="timestamp">${formatDate(new Date())}</span>
+      <span class="timestamp">${formatDate(new Date(timestamp))}</span>
     </div>
   `;
 
@@ -176,10 +250,25 @@ socket.on("createMessage", (message, userName, timestamp, replyText = null) => {
   requestAnimationFrame(() => {
     chatWindow.scrollTop = chatWindow.scrollHeight;
   });
+
+  // Show unread count if user scrolled up
+  if (userName !== user && !isUserAtBottom()) {
+    unreadMessageCount++;
+    showUnreadMessageCount();
+  }
+
   if (userName !== user) {
-    try { receiveAudio.play(); } catch (e) { console.warn("Receive tone blocked:", e); }
+    try {
+      receiveAudio.play();
+    } catch (e) {
+      console.warn("Receive tone blocked:", e);
+    }
   } else {
-    try { send.play(); } catch (e) { console.warn("Send tone blocked:", e); }
+    try {
+      sendAudio.play();
+    } catch (e) {
+      console.warn("Send tone blocked:", e);
+    }
   }
 });
 
@@ -232,7 +321,7 @@ function formatDate(date) {
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-    hour12: true,
+    hour12: true
   };
   const currentDate = new Date();
 
@@ -242,7 +331,7 @@ function formatDate(date) {
 }
 
 function isUserAtBottom() {
-  return messages.scrollHeight - messages.scrollTop === messages.clientHeight;
+  return messages.scrollHeight - messages.scrollTop <= messages.clientHeight + 1;
 }
 
 messages.addEventListener("scroll", () => {
@@ -254,16 +343,16 @@ messages.addEventListener("scroll", () => {
 });
 
 function toggleAudio(b) {
-  if (b === "true") {
-    myVideoStream.getAudioTracks()[0].enabled = true;
-  } else {
-    myVideoStream.getAudioTracks()[0].enabled = false;
-  }
+  if (!myVideoStream) return;
+  const track = myVideoStream.getAudioTracks()[0];
+  if (!track) return;
+  track.enabled = b === "true";
 }
 
 function checkMatch(userMessage) {
-  let inputMessage = userMessage.toLowerCase();
-  let result = inputMessage.match(/(asshole|fuck|shit|bitch|cunt|wanker|dickhead|bollocks|...)*/g);
-  console.log(result);
+  const inputMessage = userMessage.toLowerCase();
+  const result = inputMessage.match(
+    /(asshole|fuck|shit|bitch|cunt|wanker|dickhead|bollocks)/gi
+  );
   return result != null ? 1 : 0;
 }
