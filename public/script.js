@@ -29,19 +29,19 @@ const peer = new Peer(undefined, {
     iceServers: [
       // Xirsys STUN
       {
-        urls: ["stun:bn-turn1.xirsys.com"]
+        urls: ["stun:bn-turn2.xirsys.com"]
       },
-      // Xirsys TURN
+      // NEW Xirsys TURN credentials
       {
-        username: "DbKPwfXrz4KtlM7FpK6d5QXPGyl_p9iMw33FYW6x7YENX93zZTbYvnX4LB7RGiGnAAAAAGkGBPNnb21lcGlmODk4",
-        credential: "0e384d54-b723-11f0-a364-0242ac140004",
+        username: "vBgha3qZeRZO9dEDbaqFdZw1yC5Rg8hecZoo8G8bczaII5GwjQs0gvG-8MrPQgE0AAAAAGlIqVV2aWdvcGE1NDQy",
+        credential: "d5abcfac-dedb-11f0-be86-0242ac140004",
         urls: [
-          "turn:bn-turn1.xirsys.com:80?transport=udp",
-          "turn:bn-turn1.xirsys.com:3478?transport=udp",
-          "turn:bn-turn1.xirsys.com:80?transport=tcp",
-          "turn:bn-turn1.xirsys.com:3478?transport=tcp",
-          "turns:bn-turn1.xirsys.com:443?transport=tcp",
-          "turns:bn-turn1.xirsys.com:5349?transport=tcp"
+          "turn:bn-turn2.xirsys.com:80?transport=udp",
+          "turn:bn-turn2.xirsys.com:3478?transport=udp",
+          "turn:bn-turn2.xirsys.com:80?transport=tcp",
+          "turn:bn-turn2.xirsys.com:3478?transport=tcp",
+          "turns:bn-turn2.xirsys.com:443?transport=tcp",
+          "turns:bn-turn2.xirsys.com:5349?transport=tcp"
         ]
       }
     ]
