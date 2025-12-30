@@ -19,6 +19,7 @@ document.querySelector(".main__left").style.display = "none";
 
 // PeerJS setup
 // PeerJS setup
+// PeerJS setup
 const peer = new Peer(undefined, {
   path: "/peerjs",
   host: "/",
@@ -26,35 +27,23 @@ const peer = new Peer(undefined, {
   secure: true,
   config: {
     iceServers: [
-     { urls: "stun:stun.l.google.com:19302" },
-      { urls: "stun:stun1.l.google.com:19302" },
-      { urls: "stun:stun2.l.google.com:19302" },
-      { urls: "stun:stun3.l.google.com:19302" },
-      { urls: "stun:stun4.l.google.com:19302" },
-      { urls: "stun:stun.services.mozilla.com" },
- {
-        urls: "stun:stun.relay.metered.ca:80",
-      },
+      // Xirsys STUN
       {
-        urls: "turn:global.relay.metered.ca:80",
-        username: "2513b8e3c44fdfe12672cb46",
-        credential: "G4AS0dGTIhEW4sr2",
+        urls: ["stun:bn-turn1.xirsys.com"]
       },
+      // Xirsys TURN
       {
-        urls: "turn:global.relay.metered.ca:80?transport=tcp",
-        username: "2513b8e3c44fdfe12672cb46",
-        credential: "G4AS0dGTIhEW4sr2",
-      },
-      {
-        urls: "turn:global.relay.metered.ca:443",
-        username: "2513b8e3c44fdfe12672cb46",
-        credential: "G4AS0dGTIhEW4sr2",
-      },
-      {
-        urls: "turns:global.relay.metered.ca:443?transport=tcp",
-        username: "2513b8e3c44fdfe12672cb46",
-        credential: "G4AS0dGTIhEW4sr2",
-      },
+        username: "DbKPwfXrz4KtlM7FpK6d5QXPGyl_p9iMw33FYW6x7YENX93zZTbYvnX4LB7RGiGnAAAAAGkGBPNnb21lcGlmODk4",
+        credential: "0e384d54-b723-11f0-a364-0242ac140004",
+        urls: [
+          "turn:bn-turn1.xirsys.com:80?transport=udp",
+          "turn:bn-turn1.xirsys.com:3478?transport=udp",
+          "turn:bn-turn1.xirsys.com:80?transport=tcp",
+          "turn:bn-turn1.xirsys.com:3478?transport=tcp",
+          "turns:bn-turn1.xirsys.com:443?transport=tcp",
+          "turns:bn-turn1.xirsys.com:5349?transport=tcp"
+        ]
+      }
     ]
   }
 });
