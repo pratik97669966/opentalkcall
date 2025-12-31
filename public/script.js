@@ -25,7 +25,7 @@ const peer = new Peer(undefined, {
   host: "/",
   port: 443,
   secure: true,
-  config: {
+    config: {
     iceServers: [
       // Xirsys STUN
       {
@@ -33,8 +33,8 @@ const peer = new Peer(undefined, {
       },
       // NEW Xirsys TURN credentials
       {
-        username: "vBgha3qZeRZO9dEDbaqFdZw1yC5Rg8hecZoo8G8bczaII5GwjQs0gvG-8MrPQgE0AAAAAGlIqVV2aWdvcGE1NDQy",
-        credential: "d5abcfac-dedb-11f0-be86-0242ac140004",
+        username: "rWs9lAtEAu6QnZrXwQ6zQZqOmmsXEJctt_wORLWA1SwSnY6uA2y1Ta2f2JMgQOa9AAAAAGlIqrBiaGF2MTIz",
+        credential: "a4c7d3f8-dedc-11f0-9c2b-0242ac140004",
         urls: [
           "turn:bn-turn2.xirsys.com:80?transport=udp",
           "turn:bn-turn2.xirsys.com:3478?transport=udp",
@@ -47,7 +47,6 @@ const peer = new Peer(undefined, {
     ]
   }
 });
-
 let myVideoStream;
 
 // High-end audio constraints
