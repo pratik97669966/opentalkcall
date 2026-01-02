@@ -25,28 +25,24 @@ const peer = new Peer(undefined, {
   host: "/",
   port: 443,
   secure: true,
-    config: {
-    iceServers: [
-      // Xirsys STUN
-      {
-        urls: ["stun:bn-turn2.xirsys.com"]
-      },
-      // NEW Xirsys TURN credentials
-      {
-        username: "rWs9lAtEAu6QnZrXwQ6zQZqOmmsXEJctt_wORLWA1SwSnY6uA2y1Ta2f2JMgQOa9AAAAAGlIqrBiaGF2MTIz",
-        credential: "a4c7d3f8-dedc-11f0-9c2b-0242ac140004",
-        urls: [
-          "turn:bn-turn2.xirsys.com:80?transport=udp",
-          "turn:bn-turn2.xirsys.com:3478?transport=udp",
-          "turn:bn-turn2.xirsys.com:80?transport=tcp",
-          "turn:bn-turn2.xirsys.com:3478?transport=tcp",
-          "turns:bn-turn2.xirsys.com:443?transport=tcp",
-          "turns:bn-turn2.xirsys.com:5349?transport=tcp"
-        ]
-      }
-    ]
+  config: {
+    iceServers: [{
+      urls: ["stun:bn-turn1.xirsys.com"]
+    }, {
+      username: "xv1-aOqYqu7QYMQ71xy7hR2nY9PGHHxIbLulUful4jrM7LYfIAp6q0_fXAkQS8EAAAAAAGlIqxFyYW1qaTEyMw==",
+      credential: "de471c10-dedc-11f0-a5e7-0242ac140004",
+      urls: [
+        "turn:bn-turn1.xirsys.com:80?transport=udp",
+        "turn:bn-turn1.xirsys.com:3478?transport=udp",
+        "turn:bn-turn1.xirsys.com:80?transport=tcp",
+        "turn:bn-turn1.xirsys.com:3478?transport=tcp",
+        "turns:bn-turn1.xirsys.com:443?transport=tcp",
+        "turns:bn-turn1.xirsys.com:5349?transport=tcp"
+      ]
+    }]
   }
 });
+
 let myVideoStream;
 
 // High-end audio constraints
