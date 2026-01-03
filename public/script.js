@@ -26,22 +26,34 @@ const peer = new Peer(undefined, {
   port: 443,
   secure: true,
   config: {
-    iceServers: [{
-      urls: ["stun:bn-turn1.xirsys.com"]
-    }, {
-      username: "xv1-aOqYqu7QYMQ71xy7hR2nY9PGHHxIbLulUful4jrM7LYfIAp6q0_fXAkQS8EAAAAAAGlIqxFyYW1qaTEyMw==",
-      credential: "de471c10-dedc-11f0-a5e7-0242ac140004",
-      urls: [
-        "turn:bn-turn1.xirsys.com:80?transport=udp",
-        "turn:bn-turn1.xirsys.com:3478?transport=udp",
-        "turn:bn-turn1.xirsys.com:80?transport=tcp",
-        "turn:bn-turn1.xirsys.com:3478?transport=tcp",
-        "turns:bn-turn1.xirsys.com:443?transport=tcp",
-        "turns:bn-turn1.xirsys.com:5349?transport=tcp"
-      ]
-    }]
+    iceServers: [
+      {
+        urls: "stun:stun.relay.metered.ca:80"
+      },
+      {
+        urls: "turn:global.relay.metered.ca:80",
+        username: "679dbcc2f9266a12c72824c6",
+        credential: "0VCj1/664MrXISqZ"
+      },
+      {
+        urls: "turn:global.relay.metered.ca:80?transport=tcp",
+        username: "679dbcc2f9266a12c72824c6",
+        credential: "0VCj1/664MrXISqZ"
+      },
+      {
+        urls: "turn:global.relay.metered.ca:443",
+        username: "679dbcc2f9266a12c72824c6",
+        credential: "0VCj1/664MrXISqZ"
+      },
+      {
+        urls: "turns:global.relay.metered.ca:443?transport=tcp",
+        username: "679dbcc2f9266a12c72824c6",
+        credential: "0VCj1/664MrXISqZ"
+      }
+    ]
   }
 });
+
 
 let myVideoStream;
 
