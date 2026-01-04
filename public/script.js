@@ -33,25 +33,25 @@ const peer = new Peer(undefined, {
       {
         urls: "stun:stun.relay.metered.ca:80",
       },
-   {
+      {
         urls: "turn:global.relay.metered.ca:80",
-        username: "679dbcc2f9266a12c72824c6",
-        credential: "0VCj1/664MrXISqZ"
+        username: "a9168b498248d4191b0db8f5",
+        credential: "ctHDsDa6o0MGsDB1",
       },
       {
         urls: "turn:global.relay.metered.ca:80?transport=tcp",
-        username: "679dbcc2f9266a12c72824c6",
-        credential: "0VCj1/664MrXISqZ"
+        username: "a9168b498248d4191b0db8f5",
+        credential: "ctHDsDa6o0MGsDB1",
       },
       {
         urls: "turn:global.relay.metered.ca:443",
-        username: "679dbcc2f9266a12c72824c6",
-        credential: "0VCj1/664MrXISqZ"
+        username: "a9168b498248d4191b0db8f5",
+        credential: "ctHDsDa6o0MGsDB1",
       },
       {
         urls: "turns:global.relay.metered.ca:443?transport=tcp",
-        username: "679dbcc2f9266a12c72824c6",
-        credential: "0VCj1/664MrXISqZ"
+        username: "a9168b498248d4191b0db8f5",
+        credential: "ctHDsDa6o0MGsDB1",
       },
     ]
   }
@@ -93,7 +93,13 @@ navigator.mediaDevices.getUserMedia(audioConstraints)
 
     microphone.connect(analyser);
     analyser.connect(javascriptNode);
-    javascriptNode.connect(audioContext.destination);
+
+    // FIX: Connect to a GainNode with 0 gain to prevent local echo (loopback)
+    // while keeping the audio graph active for the ScriptProcessor.
+    const gainNode = audioContext.createGain();
+    gainNode.gain.value = 0;
+    javascriptNode.connect(gainNode);
+    gainNode.connect(audioContext.destination);
 
     let lastEmitTime = 0; // Throttle state
 
