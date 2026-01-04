@@ -17,9 +17,6 @@ document.querySelector(".main__right").style.display = "flex";
 document.querySelector(".main__right").style.flex = "1";
 document.querySelector(".main__left").style.display = "none";
 
-// PeerJS setup
-// PeerJS setup
-// PeerJS setup
 const peer = new Peer(undefined, {
   path: "/peerjs",
   host: "/",
@@ -27,10 +24,16 @@ const peer = new Peer(undefined, {
   secure: true,
   config: {
     iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" },
+      { urls: "stun:stun2.l.google.com:19302" },
+      { urls: "stun:stun3.l.google.com:19302" },
+      { urls: "stun:stun4.l.google.com:19302" },
+      { urls: "stun:stun.services.mozilla.com" },
       {
-        urls: "stun:stun.relay.metered.ca:80"
+        urls: "stun:stun.relay.metered.ca:80",
       },
-      {
+   {
         urls: "turn:global.relay.metered.ca:80",
         username: "679dbcc2f9266a12c72824c6",
         credential: "0VCj1/664MrXISqZ"
@@ -49,7 +52,7 @@ const peer = new Peer(undefined, {
         urls: "turns:global.relay.metered.ca:443?transport=tcp",
         username: "679dbcc2f9266a12c72824c6",
         credential: "0VCj1/664MrXISqZ"
-      }
+      },
     ]
   }
 });
@@ -57,12 +60,17 @@ const peer = new Peer(undefined, {
 
 let myVideoStream;
 
-// High-end audio constraints
+// High-end audio constraints (Teams/Meet Quality)
 const audioConstraints = {
   audio: {
     echoCancellation: true,
     noiseSuppression: true,
     autoGainControl: true,
+    // Android WebView specific flags for hardware DSP access
+    googEchoCancellation: true,
+    googAutoGainControl: true,
+    googNoiseSuppression: true,
+    googHighpassFilter: true,
     sampleRate: 48000,
     channelCount: 1
   },
@@ -73,6 +81,56 @@ navigator.mediaDevices.getUserMedia(audioConstraints)
   .then((stream) => {
     myVideoStream = stream;
     addVideoStream(myVideo, stream);
+
+    // --- Audio Analysis for Waves ---
+    const audioContext = new AudioContext();
+    const analyser = audioContext.createAnalyser();
+    const microphone = audioContext.createMediaStreamSource(stream);
+    const javascriptNode = audioContext.createScriptProcessor(2048, 1, 1);
+
+    analyser.smoothingTimeConstant = 0.8;
+    analyser.fftSize = 1024;
+
+    microphone.connect(analyser);
+    analyser.connect(javascriptNode);
+    javascriptNode.connect(audioContext.destination);
+
+    let lastEmitTime = 0; // Throttle state
+
+    javascriptNode.onaudioprocess = function () {
+      // PRODUCTION FIX: Null safety + mute check
+      if (!myVideoStream || !myVideoStream.getAudioTracks() || myVideoStream.getAudioTracks().length === 0) {
+        return; // No audio track available
+      }
+
+      // FIX: Do not analyze/emit if microphone is muted
+      if (!myVideoStream.getAudioTracks()[0].enabled) {
+        return; // Mic is muted, skip analysis
+      }
+
+      var array = new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteFrequencyData(array);
+      var values = 0;
+      var length = array.length;
+      for (var i = 0; i < length; i++) {
+        values += array[i];
+      }
+      var average = values / length;
+
+      // Broadcast volume (0-100 approx)
+      // Professional Optimization: Throttle to 100ms (10fps). 
+      // Prevents socket flooding which causes robotic voice in 20-user calls.
+      const now = Date.now();
+      if (average > 0 && (now - lastEmitTime > 100)) {
+        lastEmitTime = now;
+        socket.emit("speaking", Math.round(average));
+        // Update local Android UI for self
+        if (typeof Android !== "undefined" && Android !== null && user) {
+          Android.speakerDetected(user, Math.round(average));
+        }
+      }
+    }
+    // --------------------------------
 
     peer.on("call", (call) => {
       call.answer(stream);
@@ -85,7 +143,37 @@ navigator.mediaDevices.getUserMedia(audioConstraints)
     socket.on("user-connected", (userId) => {
       connectToNewUser(userId, stream);
     });
+  })
+  .catch((error) => {
+    // PRODUCTION FIX: Handle mic permission denied or unavailable
+    console.error("getUserMedia failed:", error);
+    if (typeof Android !== "undefined" && Android !== null) {
+      // Optionally notify Android of the error
+      // Android.onMicError(error.message);
+    }
+    alert("Microphone access denied. Please enable microphone permission to join the call.");
   });
+
+// Listen for other users speaking
+socket.on("user-speaking", (remoteUserName, volume) => {
+  // PRODUCTION FIX: Null safety for remoteUserName
+  if (!remoteUserName || volume === undefined) {
+    return;
+  }
+  // Android is already throttled, but this helps the JS thread too
+  if (typeof Android !== "undefined" && Android !== null) {
+    Android.speakerDetected(remoteUserName, volume);
+  }
+});
+
+// PRODUCTION FIX: Socket error handling
+socket.on("connect_error", (error) => {
+  console.error("Socket connection error:", error);
+});
+
+socket.on("disconnect", (reason) => {
+  console.warn("Socket disconnected:", reason);
+});
 
 const connectToNewUser = (userId, stream) => {
   const call = peer.call(userId, stream);
