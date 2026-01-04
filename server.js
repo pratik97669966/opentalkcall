@@ -36,16 +36,7 @@ io.on("connection", (socket) => {
       }
       io.to(roomId).emit("createMessage", message, userName);
     });
-
-    // Relay Audio Volume for Waves
-    // FIXED: Added validation to prevent crashes from invalid data
-    socket.on("speaking", (volume) => {
-      if (userName && volume !== undefined) {
-        socket.to(roomId).broadcast.emit("user-speaking", userName, volume);
-      }
-    });
   });
 });
 
 server.listen(process.env.PORT || 3000);
-
