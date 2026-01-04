@@ -80,7 +80,11 @@ const audioConstraints = {
 navigator.mediaDevices.getUserMedia(audioConstraints)
   .then((stream) => {
     myVideoStream = stream;
-    addVideoStream(myVideo, stream);
+    // FIX: Do NOT play local stream directly to prevent echo on some Android devices.
+    // We only need the stream for:
+    // 1. PeerJS (sending to others)
+    // 2. AudioContext (analyzing for waves)
+    // addVideoStream(myVideo, stream); <--- REMOVED TO KILL ECHO
 
     // --- Audio Analysis for Waves ---
     const audioContext = new AudioContext();
