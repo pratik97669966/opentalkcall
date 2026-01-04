@@ -36,6 +36,12 @@ io.on("connection", (socket) => {
       }
       io.to(roomId).emit("createMessage", message, userName);
     });
+
+    // Relay Audio Volume for Waves
+    // CRITICAL FIX: Send userName (for Android UI) instead of userId (PeerID)
+    socket.on("speaking", (volume) => {
+      socket.to(roomId).broadcast.emit("user-speaking", userName, volume);
+    });
   });
 });
 
