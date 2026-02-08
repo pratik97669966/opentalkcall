@@ -41,7 +41,7 @@ const peer = new Peer(undefined, {
       },
 
       // Metered TURN
-      {
+ {
         urls: "turn:global.relay.metered.ca:80",
         username: "d1584d41b77f56c730a7b90f",
         credential: "xL0btcbYwKghSqW2",
@@ -63,10 +63,6 @@ const peer = new Peer(undefined, {
       },
   ],
 });
-    ],
-  },
-});
-
 
 
 let myVideoStream;
