@@ -41,25 +41,25 @@ const peer = new Peer(undefined, {
       },
 
       // Metered TURN
-  {
+ {
         urls: "turn:global.relay.metered.ca:80",
-        username: "22ce600fe0fc759155303d7e",
-        credential: "c2BGuyJDTIlI7N7t",
+        username: "d6e619bdfe93eaf7e9a6954d",
+        credential: "zvwtosT2acwaUk1+",
       },
       {
         urls: "turn:global.relay.metered.ca:80?transport=tcp",
-        username: "22ce600fe0fc759155303d7e",
-        credential: "c2BGuyJDTIlI7N7t",
+        username: "d6e619bdfe93eaf7e9a6954d",
+        credential: "zvwtosT2acwaUk1+",
       },
       {
         urls: "turn:global.relay.metered.ca:443",
-        username: "22ce600fe0fc759155303d7e",
-        credential: "c2BGuyJDTIlI7N7t",
+        username: "d6e619bdfe93eaf7e9a6954d",
+        credential: "zvwtosT2acwaUk1+",
       },
       {
         urls: "turns:global.relay.metered.ca:443?transport=tcp",
-        username: "22ce600fe0fc759155303d7e",
-        credential: "c2BGuyJDTIlI7N7t",
+        username: "d6e619bdfe93eaf7e9a6954d",
+        credential: "zvwtosT2acwaUk1+",
       },
     ],
   },
