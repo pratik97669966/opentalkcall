@@ -136,7 +136,7 @@ let messages = document.querySelector(".messages");
 
 let replyToMessage = null;
 
-send.addEventListener("click", () => {
+const sendMessage = () => {
   const message = text.value.trim();
   if (!message) return;
   const timestamp = new Date().toLocaleString();
@@ -149,16 +149,24 @@ send.addEventListener("click", () => {
   } catch (e) {
     console.warn("Send tone blocked:", e);
   }
+};
+
+// Prevent input focus loss when interacting with the send button to keep keyboard open
+send.addEventListener("mousedown", (e) => e.preventDefault());
+send.addEventListener("touchstart", (e) => {
+    e.preventDefault(); // Prevent input blur on mobile
+    sendMessage();      // Trigger explicitly since preventDefault drops the click event
+}, { passive: false });
+
+// Only trigger click on desktop browsers where mousedown doesn't drop the click event
+send.addEventListener("click", (e) => {
+    e.preventDefault();
+    sendMessage();
 });
 
 text.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && text.value.length !== 0) {
-    const message = text.value;
-    const timestamp = new Date().toLocaleString();
-    socket.emit("message", message, timestamp, replyToMessage);
-    text.value = "";
-    text.placeholder = "Type a message...";
-    replyToMessage = null;
+    sendMessage();
   }
 });
 
